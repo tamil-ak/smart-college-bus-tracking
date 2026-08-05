@@ -1,0 +1,60 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 1. Small Gold GPS Location Pin above the bus -->
+  <g>
+    <!-- GPS Pin Body (Gold with Navy outlines) -->
+    <path
+      d="M50 25 C44.5 18 40 14 40 10.5C40 5 44.5 0.5 50 0.5C55.5 0.5 60 5 60 10.5C60 14 55.5 18 50 25 Z"
+      fill="#FFC107"
+      stroke="#0B3D91"
+      stroke-width="3"
+      stroke-linejoin="round"
+    />
+    <!-- Pin Center cutout (Navy) -->
+    <circle cx="50" cy="10.5" r="3.5" fill="#0B3D91"/>
+  </g>
+
+  <!-- 2. Large modern front-view college bus (Main Focus) -->
+  <g>
+    <!-- Left & Right tires (peeking out at bottom) -->
+    <rect x="22" y="80" width="14" height="12" rx="3.5" fill="#1E293B" stroke="#0B3D91" stroke-width="2"/>
+    <rect x="64" y="80" width="14" height="12" rx="3.5" fill="#1E293B" stroke="#0B3D91" stroke-width="2"/>
+
+    <!-- Left & Right side mirror fixtures -->
+    <rect x="4" y="38" width="5" height="14" rx="1.5" fill="#0B3D91" />
+    <rect x="9" y="43" width="4" height="4" fill="#0B3D91" />
+    <rect x="91" y="38" width="5" height="14" rx="1.5" fill="#0B3D91" />
+    <rect x="87" y="43" width="4" height="4" fill="#0B3D91" />
+
+    <!-- Main Bus Body (Navy Blue with thick outlines) -->
+    <rect
+      x="12"
+      y="28"
+      width="76"
+      height="54"
+      rx="14"
+      fill="#0B3D91"
+    />
+
+    <!-- Main Windshield (Large White Box for high contrast) -->
+    <rect
+      x="18"
+      y="34"
+      width="64"
+      height="22"
+      rx="6"
+      fill="#FFFFFF"
+      stroke="#0B3D91"
+      stroke-width="4.5"
+    />
+    <!-- Center windshield pillar -->
+    <rect x="48" y="34" width="4" height="22" fill="#0B3D91" />
+
+    <!-- High-Contrast Golden Headlights with thick outlines -->
+    <circle cx="26" cy="66" r="7" fill="#FFC107" stroke="#0B3D91" stroke-width="4" />
+    <circle cx="74" cy="66" r="7" fill="#FFC107" stroke="#0B3D91" stroke-width="4" />
+
+    <!-- White bumper bar grill details for visibility -->
+    <rect x="38" y="63" width="24" height="6" rx="3" fill="#FFFFFF" />
+    <line x1="38" y1="74" x2="62" y2="74" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+  </g>
+</svg>

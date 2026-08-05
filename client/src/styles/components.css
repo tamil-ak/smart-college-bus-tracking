@@ -1,0 +1,246 @@
+/* Component Styles for CBTS */
+
+/* 1. Logo Styles */
+.cbts-logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.75rem;
+  position: relative;
+  width: 120px;   /* Increased from 100px */
+  height: 120px;  /* Increased from 100px */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cbts-logo-glow {
+  position: absolute;
+  width: 130%;
+  height: 130%;
+  background: radial-gradient(circle, rgba(11, 61, 145, 0.1) 0%, rgba(255, 193, 7, 0.06) 50%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  animation: pulseRadar 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.cbts-logo-svg {
+  width: 108px;  /* Increased from 90px */
+  height: 108px; /* Increased from 90px */
+  filter: drop-shadow(0 6px 16px rgba(11, 61, 145, 0.15));
+  transition: transform var(--transition-normal);
+  animation: logoFloat 4.5s ease-in-out infinite; /* Added gentle floating animation */
+}
+
+.cbts-logo-container:hover .cbts-logo-svg {
+  /* Retain float keyframe basis but boost scale on hover */
+  animation-play-state: paused;
+  transform: scale(1.08) rotate(4deg);
+}
+
+.cbts-logo-ping-circle {
+  transform-origin: center;
+  animation: pulseRadar 1.8s ease-in-out infinite;
+}
+
+/* 2. Button Styles */
+.cbts-btn-group {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 2.25rem 0 0.5rem 0;
+}
+
+.cbts-btn {
+  font-family: var(--font-sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 0.95rem 2.5rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-normal);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  min-width: 155px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.cbts-btn-primary {
+  background: linear-gradient(135deg, var(--primary-navy) 0%, #154fb0 100%);
+  color: var(--bg-white);
+  box-shadow: 0 6px 18px rgba(11, 61, 145, 0.22);
+}
+
+.cbts-btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: none;
+  z-index: -1;
+}
+
+.cbts-btn-primary:hover::before {
+  left: 100%;
+  transition: all 0.75s ease;
+}
+
+.cbts-btn-primary:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: var(--shadow-btn-hover);
+  border-color: var(--primary-yellow);
+}
+
+.cbts-btn-primary:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+.cbts-btn-secondary {
+  background: transparent;
+  color: var(--primary-navy);
+  border-color: rgba(11, 61, 145, 0.25);
+  box-shadow: 0 4px 12px rgba(11, 61, 145, 0.02);
+}
+
+.cbts-btn-secondary:hover {
+  border-color: var(--primary-navy);
+  background: rgba(11, 61, 145, 0.05);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(11, 61, 145, 0.06);
+}
+
+.cbts-btn-secondary:active {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* 3. Feature Badge Styles */
+.cbts-badges-container {
+  display: flex;
+  gap: 1.25rem;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 1.75rem 0;
+  width: 100%;
+}
+
+.cbts-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--bg-white);
+  padding: 0.6rem 1.4rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dark-secondary);
+  transition: all var(--transition-normal);
+  cursor: default;
+  user-select: none;
+}
+
+.cbts-badge:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(255, 193, 7, 0.6);
+  color: var(--primary-navy);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.cbts-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 193, 7, 0.18);
+  color: #c99200;
+  font-size: 0.8rem;
+  font-weight: bold;
+  transition: all var(--transition-normal);
+}
+
+.cbts-badge:hover .cbts-badge-icon {
+  background: var(--primary-yellow);
+  color: var(--primary-navy);
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+}
+
+/* 4. Campus Illustration Styles */
+.cbts-illustration-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 1.5rem auto 0 auto;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  opacity: 0.96;
+  transition: opacity var(--transition-normal);
+}
+
+.cbts-illustration-container:hover {
+  opacity: 1;
+}
+
+.cbts-illustration-svg {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+}
+
+/* SVG Animations */
+.ill-bus {
+  animation: busBounce 2s ease-in-out infinite; /* Custom engine idle bounce */
+}
+
+.ill-road-dashed {
+  animation: roadDash 0.8s linear infinite; /* Increased speed from 1s to 0.8s for smooth motion */
+  stroke-dasharray: 8 12;
+}
+
+.ill-cloud {
+  transform-origin: center;
+}
+
+.ill-cloud-1 {
+  animation: floatBlob 24s ease-in-out infinite;
+}
+
+.ill-cloud-2 {
+  animation: floatBlob 28s ease-in-out infinite alternate;
+}
+
+.ill-window {
+  transition: fill var(--transition-slow);
+}
+
+.ill-building-1:hover .ill-window {
+  fill: var(--primary-yellow);
+}
+
+.ill-bus-wheel {
+  transform-origin: center;
+  animation: spinSlow 1.2s linear infinite; /* Spun wheels faster (1.2s) to represent driving */
+}

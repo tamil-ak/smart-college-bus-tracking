@@ -1,0 +1,316 @@
+/* Register Pages CSS Styles */
+
+.cbts-register-wrapper {
+  padding-top: 50px;
+  padding-bottom: 50px;
+}
+
+/* 1. Centered Glassmorphic Form Card */
+.cbts-register-card {
+  background: var(--bg-card-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(255, 255, 255, 0.65);
+  border-radius: 30px;
+  padding: 3rem 3.5rem;
+  box-shadow: var(--shadow-lg);
+  width: 100%;
+  max-width: 700px;
+  margin: auto;
+  box-sizing: border-box;
+  position: relative;
+  text-align: left;
+}
+
+.cbts-register-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 30px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(11, 61, 145, 0.04) 50%, rgba(255, 255, 255, 0.2) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Header Text inside Form */
+.cbts-register-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.cbts-register-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+  margin-bottom: 0.25rem;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--primary-navy) 40%, #154fb0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+
+.cbts-register-subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-dark-secondary);
+}
+
+/* 2. Responsive CSS Grid for Inputs */
+.cbts-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Full Width Fields inside grid */
+.grid-span-full {
+  grid-column: span 2;
+}
+
+/* Inputs, Selects & Labels */
+.cbts-form-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.cbts-form-label {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-dark-secondary);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.25px;
+}
+
+.cbts-form-input,
+.cbts-form-select {
+  font-family: var(--font-sans);
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  border: 1.5px solid rgba(11, 61, 145, 0.15);
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-dark-primary);
+  font-size: 0.95rem;
+  outline: none;
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.cbts-form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230B3D91' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+  cursor: pointer;
+}
+
+.cbts-form-input:focus,
+.cbts-form-select:focus {
+  border-color: var(--primary-navy);
+  box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.08);
+  background: #FFFFFF;
+}
+
+/* Field Validation Errors */
+.cbts-error-text {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #EF4444;
+  margin-top: 0.35rem;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.cbts-form-group.has-error .cbts-form-input,
+.cbts-form-group.has-error .cbts-form-select {
+  border-color: #EF4444;
+}
+
+.cbts-form-group.has-error .cbts-form-input:focus,
+.cbts-form-group.has-error .cbts-form-select:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+/* Global Form Alert box */
+.cbts-form-alert {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #DC2626;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+/* 3. Checkbox Group */
+.cbts-checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+  cursor: pointer;
+}
+
+.cbts-checkbox-input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary-navy);
+  cursor: pointer;
+  margin-top: 0.15rem;
+}
+
+.cbts-checkbox-label {
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--text-dark-secondary);
+  user-select: none;
+  font-weight: 500;
+}
+
+.cbts-checkbox-label a {
+  color: var(--primary-navy);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* 4. Action Buttons spacing */
+.cbts-form-actions {
+  display: flex;
+  gap: 1.25rem;
+  width: 100%;
+  margin-top: 1.75rem;
+}
+
+.cbts-form-actions .cbts-btn {
+  flex: 1;
+}
+
+/* 5. Success Popup Modal Overlay */
+.cbts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.cbts-modal-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-glass);
+  border-radius: 28px;
+  padding: 3.5rem 2.5rem;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg), 0 30px 60px rgba(11, 61, 145, 0.15);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cbts-modal-icon-container {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(255, 193, 7, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.75rem;
+  color: var(--primary-navy);
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.15);
+  animation: pulseRadar 2s ease-in-out infinite;
+}
+
+.cbts-modal-icon-svg {
+  width: 32px;
+  height: 32px;
+  color: var(--primary-navy);
+  stroke: var(--primary-navy);
+}
+
+.cbts-modal-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+.cbts-modal-subtitle {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-dark-secondary);
+  line-height: 1.5;
+  margin-bottom: 2.25rem;
+}
+
+.cbts-modal-btn {
+  width: 100%;
+}
+
+/* 6. Responsive Queries */
+@media (max-width: 768px) {
+  .cbts-register-card {
+    padding: 2.5rem 2rem;
+    border-radius: 24px;
+  }
+
+  .cbts-register-card::before {
+    border-radius: 24px;
+  }
+
+  .cbts-register-title {
+    font-size: 2.1rem;
+  }
+
+  .cbts-form-grid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .grid-span-full {
+    grid-column: span 1;
+  }
+
+  .cbts-form-actions {
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .cbts-register-card {
+    padding: 2rem 1.25rem;
+  }
+  
+  .cbts-register-title {
+    font-size: 1.85rem;
+  }
+
+  .cbts-modal-card {
+    padding: 2.5rem 1.5rem;
+  }
+}
