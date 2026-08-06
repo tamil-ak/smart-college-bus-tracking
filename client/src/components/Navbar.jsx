@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
+  };
+
+  const handleLoginClick = (e) => {
+    e.preventDefault();
+    setIsOpen(false);
+    navigate('/login/student');
   };
 
   return (
@@ -40,7 +48,7 @@ const Navbar = () => {
 
         {/* Login Button (Desktop) */}
         <div className="cbts-nav-actions-desktop">
-          <a href="#login" className="cbts-nav-btn-login">Login</a>
+          <a href="#login" className="cbts-nav-btn-login" onClick={handleLoginClick}>Login</a>
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -63,7 +71,7 @@ const Navbar = () => {
           <li><a href="#features" className="cbts-mobile-link" onClick={() => setIsOpen(false)}>Features</a></li>
           <li><a href="#about" className="cbts-mobile-link" onClick={() => setIsOpen(false)}>About</a></li>
           <li><a href="#contact" className="cbts-mobile-link" onClick={() => setIsOpen(false)}>Contact</a></li>
-          <li><a href="#login" className="cbts-mobile-link cbts-mobile-login-btn" onClick={() => setIsOpen(false)}>Login</a></li>
+          <li><a href="#login" className="cbts-mobile-link cbts-mobile-login-btn" onClick={handleLoginClick}>Login</a></li>
         </ul>
       </div>
     </nav>

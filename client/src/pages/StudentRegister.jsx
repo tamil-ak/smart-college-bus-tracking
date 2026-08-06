@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import Footer from '../components/Footer';
 import '../styles/landing.css';
 import '../styles/register.css';
@@ -11,7 +12,7 @@ const StudentRegister = () => {
   const navigate = useNavigate();
 
   // Form Fields State
-  const [formData, setFormData] = useState({
+  const [formFields, setFormFields] = useState({
     fullName: '',
     registerNumber: '',
     department: '',
@@ -34,7 +35,7 @@ const StudentRegister = () => {
   // Field change handler
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
+    setFormFields((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
@@ -65,7 +66,7 @@ const StudentRegister = () => {
     ];
 
     requiredFields.forEach((field) => {
-      if (!formData[field] || formData[field].trim() === '') {
+      if (!formFields[field] || formFields[field].trim() === '') {
         tempErrors[field] = 'This field is required';
         isValid = false;
       }
@@ -73,21 +74,21 @@ const StudentRegister = () => {
 
     // 2. Email Validation (Regex check)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
+    if (formFields.email && !emailRegex.test(formFields.email)) {
       tempErrors.email = 'Please enter a valid email address';
       isValid = false;
     }
 
     // 3. Password Match Check
-    if (formData.password && formData.confirmPassword) {
-      if (formData.password !== formData.confirmPassword) {
+    if (formFields.password && formFields.confirmPassword) {
+      if (formFields.password !== formFields.confirmPassword) {
         tempErrors.confirmPassword = 'Passwords do not match';
         isValid = false;
       }
     }
 
     // 4. Terms Checkbox Checked Validation
-    if (!formData.agreeTerms) {
+    if (!formFields.agreeTerms) {
       tempErrors.agreeTerms = 'You must agree to the Terms & Conditions to register';
       isValid = false;
     }
@@ -102,11 +103,41 @@ const StudentRegister = () => {
   };
 
   // Form Submit handler
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Simulate form submission
-      setShowSuccess(true);
+      const formData = {
+        name: formFields.fullName,
+        registerNumber: formFields.registerNumber,
+        department: formFields.department,
+        year: formFields.year,
+        section: formFields.section,
+        email: formFields.email,
+        phone: formFields.phone,
+        password: formFields.password
+      };
+
+      console.log("Sending registration request data:", formData);
+
+      try {
+        setGlobalError('');
+        const response = await axios.post("http://localhost:5000/api/auth/register/student", formData);
+        console.log("Registration response:", response);
+        
+        setShowSuccess(true);
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } catch (err) {
+        console.error("Axios registration error:", err);
+        if (err.response) {
+          // If the backend returns an error, display error.response.data.message
+          setGlobalError(err.response.data?.message || 'Registration failed');
+        } else {
+          // If there is no response, display "Cannot connect to backend server."
+          setGlobalError('Cannot connect to backend server.');
+        }
+      }
     }
   };
 
@@ -159,7 +190,7 @@ const StudentRegister = () => {
                   name="fullName"
                   className="cbts-form-input"
                   placeholder="John Doe"
-                  value={formData.fullName}
+                  value={formFields.fullName}
                   onChange={handleChange}
                   required
                 />
@@ -175,7 +206,7 @@ const StudentRegister = () => {
                   name="registerNumber"
                   className="cbts-form-input"
                   placeholder="3122XXXXXXXX"
-                  value={formData.registerNumber}
+                  value={formFields.registerNumber}
                   onChange={handleChange}
                   required
                 />
@@ -189,7 +220,7 @@ const StudentRegister = () => {
                   id="department"
                   name="department"
                   className="cbts-form-select"
-                  value={formData.department}
+                  value={formFields.department}
                   onChange={handleChange}
                   required
                 >
@@ -211,7 +242,7 @@ const StudentRegister = () => {
                   id="year"
                   name="year"
                   className="cbts-form-select"
-                  value={formData.year}
+                  value={formFields.year}
                   onChange={handleChange}
                   required
                 >
@@ -231,7 +262,7 @@ const StudentRegister = () => {
                   id="section"
                   name="section"
                   className="cbts-form-select"
-                  value={formData.section}
+                  value={formFields.section}
                   onChange={handleChange}
                   required
                 >
@@ -253,7 +284,7 @@ const StudentRegister = () => {
                   name="email"
                   className="cbts-form-input"
                   placeholder="studentname@college.edu"
-                  value={formData.email}
+                  value={formFields.email}
                   onChange={handleChange}
                   required
                 />
@@ -269,7 +300,7 @@ const StudentRegister = () => {
                   name="phone"
                   className="cbts-form-input"
                   placeholder="9876543210"
-                  value={formData.phone}
+                  value={formFields.phone}
                   onChange={handleChange}
                   required
                 />
@@ -285,7 +316,7 @@ const StudentRegister = () => {
                   name="password"
                   className="cbts-form-input"
                   placeholder="Min 6 characters"
-                  value={formData.password}
+                  value={formFields.password}
                   onChange={handleChange}
                   required
                 />
@@ -301,7 +332,7 @@ const StudentRegister = () => {
                   name="confirmPassword"
                   className="cbts-form-input"
                   placeholder="Re-enter password"
-                  value={formData.confirmPassword}
+                  value={formFields.confirmPassword}
                   onChange={handleChange}
                   required
                 />
@@ -310,13 +341,13 @@ const StudentRegister = () => {
             </div>
 
             {/* Terms and Conditions */}
-            <div className={`cbts-checkbox-group ${errors.agreeTerms ? 'has-error' : ''}`} onClick={() => setFormData(prev => ({...prev, agreeTerms: !prev.agreeTerms}))}>
+            <div className={`cbts-checkbox-group ${errors.agreeTerms ? 'has-error' : ''}`} onClick={() => setFormFields(prev => ({...prev, agreeTerms: !prev.agreeTerms}))}>
               <input
                 type="checkbox"
                 id="agreeTerms"
                 name="agreeTerms"
                 className="cbts-checkbox-input"
-                checked={formData.agreeTerms}
+                checked={formFields.agreeTerms}
                 onChange={handleChange}
                 onClick={(e) => e.stopPropagation()} // Stop double trigger on label click bubble
                 required
@@ -358,7 +389,7 @@ const StudentRegister = () => {
               </svg>
             </div>
             <h2 className="cbts-modal-title">Registration submitted successfully.</h2>
-            <p className="cbts-modal-subtitle">Your account is pending Admin approval.</p>
+            <p className="cbts-modal-subtitle">Waiting for Admin Approval.</p>
             <button 
               className="cbts-btn cbts-btn-primary cbts-modal-btn" 
               onClick={handleGoToSignIn}

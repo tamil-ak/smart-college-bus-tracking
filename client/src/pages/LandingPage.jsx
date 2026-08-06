@@ -16,8 +16,7 @@ const LandingPage = () => {
   const navigate = useNavigate();
   
   const handleSignIn = () => {
-    console.log('Navigate to Sign In');
-    // Implement sign in navigation or modal open here
+    navigate('/login/student');
   };
 
   const handleSignUp = () => {
