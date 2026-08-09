@@ -98,6 +98,31 @@ const AdminDashboard = () => {
               <span className="cbts-stats-number">{students.length}</span>
               <span className="cbts-stats-label">Pending Reviews</span>
             </div>
+
+            <button 
+              className="cbts-admin-btn-exit" 
+              onClick={() => navigate('/admin/buses')}
+              style={{ background: 'var(--primary-navy)', color: '#ffffff', borderColor: 'var(--primary-navy)' }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M6 8h4M6 12h12M6 16h8" />
+              </svg>
+              Manage Buses
+            </button>
+
+            <button 
+              className="cbts-admin-btn-exit" 
+              onClick={() => navigate('/admin/bus-assignment')}
+              style={{ background: 'var(--primary-navy)', color: '#ffffff', borderColor: 'var(--primary-navy)' }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="8.5" cy="7" r="4" />
+                <polyline points="17 11 19 13 23 9" />
+              </svg>
+              Bus Assignment
+            </button>
             
             <button className="cbts-admin-btn-exit" onClick={handleExit}>
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">

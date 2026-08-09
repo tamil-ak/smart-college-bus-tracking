@@ -289,3 +289,740 @@
   border-color: var(--primary-navy);
   transform: translateX(-3px);
 }
+
+/* Bus Management Redesign Grid Layout */
+.cbts-bus-dashboard-grid {
+  display: grid;
+  grid-template-columns: 35% 65%;
+  gap: 2rem;
+  align-items: start;
+}
+
+.cbts-bus-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.cbts-stat-card {
+  background: var(--bg-card-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform var(--transition-normal);
+}
+
+.cbts-stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.cbts-stat-card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dark-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cbts-stat-card-value {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+}
+
+.cbts-bus-table-wrapper {
+  max-height: calc(100vh - 380px);
+  min-height: 380px;
+  overflow-y: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(11, 61, 145, 0.05);
+}
+
+@media (max-width: 1024px) {
+  .cbts-bus-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .cbts-bus-stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .cbts-bus-table-wrapper {
+    max-height: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .cbts-bus-stats-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Student Portal Responsive Dashboard Styles
+   ========================================================================== */
+
+.cbts-student-content {
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.75rem 2rem;
+  position: relative;
+  z-index: 10;
+  animation: fadeInUp var(--transition-slow);
+  box-sizing: border-box;
+}
+
+.cbts-student-header {
+  margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.cbts-student-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cbts-student-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--primary-navy);
+  letter-spacing: -0.5px;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cbts-student-subtitle {
+  color: var(--text-dark-muted);
+  font-size: 1.05rem;
+  margin: 0;
+  word-break: break-word;
+}
+
+.cbts-student-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  width: 100%;
+}
+
+.cbts-student-card {
+  background: var(--bg-card-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-glass);
+  border-radius: 24px;
+  box-shadow: var(--shadow-md);
+  padding: 2rem 2.25rem;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.cbts-student-card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0 0 1.5rem 0;
+  color: var(--primary-navy);
+  letter-spacing: -0.2px;
+}
+
+.cbts-student-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.75rem;
+  width: 100%;
+}
+
+.cbts-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.cbts-info-label {
+  font-size: 0.78rem;
+  color: var(--text-dark-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.cbts-info-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-dark-primary);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Device Security Card */
+.cbts-device-security-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.cbts-device-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.95rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.cbts-device-badge-registered {
+  background: rgba(16, 185, 129, 0.12);
+  color: #065F46;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.cbts-device-badge-unregistered {
+  background: rgba(245, 158, 11, 0.12);
+  color: #B78103;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+
+.cbts-device-message-alert {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #065F46;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cbts-device-id-box {
+  margin-top: 0.5rem;
+  background: rgba(11, 61, 145, 0.03);
+  padding: 0.75rem 1.1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(11, 61, 145, 0.07);
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.cbts-device-id-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-navy);
+  margin: 0.2rem 0 0;
+  font-family: monospace;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.cbts-bus-seats-row {
+  display: flex;
+  gap: 1.5rem;
+  border-top: 1px solid rgba(11, 61, 145, 0.08);
+  padding-top: 1.5rem;
+  margin-top: 0.75rem;
+}
+
+.cbts-bus-seat-metric {
+  flex: 1;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Face Registration & Camera Preview Styles
+   ========================================================================== */
+
+.cbts-camera-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.cbts-camera-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 4 / 3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #0F172A;
+  box-shadow: 0 10px 30px rgba(11, 61, 145, 0.15);
+  border: 2px solid rgba(11, 61, 145, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cbts-camera-video,
+.cbts-camera-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.cbts-face-oval-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56%;
+  height: 74%;
+  border: 2.5px dashed rgba(255, 193, 7, 0.9);
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35);
+  animation: pulseRadar 3s infinite ease-in-out;
+}
+
+.cbts-face-captured-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(16, 185, 129, 0.92);
+  color: #ffffff;
+  padding: 0.35rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.cbts-camera-actions {
+  display: flex;
+  gap: 0.85rem;
+  justify-content: center;
+  width: 100%;
+  max-width: 380px;
+  flex-wrap: wrap;
+}
+
+.cbts-camera-actions .cbts-btn {
+  flex: 1;
+  min-width: 130px;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+/* ==========================================================================
+   QR Scanner Modal & Frame Styles
+   ========================================================================== */
+
+.cbts-qr-scanner-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.cbts-qr-viewport {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 1 / 1;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #090D16;
+  border: 2px solid rgba(11, 61, 145, 0.2);
+  box-shadow: 0 12px 35px rgba(11, 61, 145, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cbts-qr-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cbts-qr-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72%;
+  height: 72%;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(9, 13, 22, 0.55);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 4 Corner Markers for QR Reticle */
+.cbts-qr-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: #3B82F6;
+  border-style: solid;
+}
+
+.cbts-qr-corner-tl {
+  top: 0;
+  left: 0;
+  border-width: 3.5px 0 0 3.5px;
+  border-top-left-radius: 12px;
+}
+
+.cbts-qr-corner-tr {
+  top: 0;
+  right: 0;
+  border-width: 3.5px 3.5px 0 0;
+  border-top-right-radius: 12px;
+}
+
+.cbts-qr-corner-bl {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 3.5px 3.5px;
+  border-bottom-left-radius: 12px;
+}
+
+.cbts-qr-corner-br {
+  bottom: 0;
+  right: 0;
+  border-width: 0 3.5px 3.5px 0;
+  border-bottom-right-radius: 12px;
+}
+
+/* Animated Laser Scanning Line */
+.cbts-qr-laser-line {
+  position: absolute;
+  left: 5%;
+  width: 90%;
+  height: 2.5px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0) 0%, #60A5FA 50%, rgba(59, 130, 246, 0) 100%);
+  box-shadow: 0 0 12px #3B82F6;
+  animation: qrLaserScan 2.4s infinite ease-in-out;
+}
+
+@keyframes qrLaserScan {
+  0% {
+    top: 6%;
+    opacity: 0.3;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.3;
+  }
+}
+
+.cbts-qr-hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-dark-secondary);
+  text-align: center;
+  max-width: 340px;
+  line-height: 1.45;
+}
+
+.cbts-qr-scanned-box {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #065F46;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+/* ==========================================================================
+   Bus QR Modal Styles
+   ========================================================================== */
+
+.cbts-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.cbts-modal-card {
+  background: #ffffff;
+  border-radius: 24px;
+  max-width: 440px;
+  width: 100%;
+  padding: 2rem 1.75rem;
+  box-shadow: 0 25px 60px rgba(11, 61, 145, 0.2);
+  border: 1px solid rgba(11, 61, 145, 0.12);
+  position: relative;
+  text-align: center;
+  box-sizing: border-box;
+  animation: modalFadeIn 0.25s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cbts-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  text-align: left;
+}
+
+.cbts-modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-dark-muted);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.cbts-modal-close-btn:hover {
+  background: rgba(15, 23, 42, 0.08);
+  color: var(--text-dark-primary);
+}
+
+.cbts-bus-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.25rem;
+  background: #FAFBFD;
+  border-radius: 18px;
+  border: 1.5px dashed rgba(11, 61, 145, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.cbts-bus-qr-image {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.cbts-bus-qr-info {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints: Desktop, Tablet, Mobile
+   ========================================================================== */
+
+/* 1. Large Laptops & Small Desktops (1025px - 1200px) */
+@media (max-width: 1200px) {
+  .cbts-student-content {
+    max-width: 100%;
+    padding: 2.25rem 1.5rem;
+  }
+
+  .cbts-student-info-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+/* 2. Tablets (769px - 1024px) */
+@media (max-width: 1024px) {
+  .cbts-student-content {
+    padding: 2rem 1.25rem;
+  }
+
+  .cbts-student-card {
+    padding: 1.75rem 1.5rem;
+    border-radius: 20px;
+  }
+
+  .cbts-student-title {
+    font-size: 1.85rem;
+  }
+
+  .cbts-student-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+}
+
+/* 3. Small Tablets & Landscape Mobile (481px - 768px) */
+@media (max-width: 768px) {
+  .cbts-student-content {
+    padding: 1.5rem 1rem;
+  }
+
+  .cbts-student-card {
+    padding: 1.35rem 1.15rem;
+    border-radius: 16px;
+  }
+
+  .cbts-student-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .cbts-student-title {
+    font-size: 1.55rem;
+  }
+
+  .cbts-student-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .cbts-student-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  .cbts-bus-seats-row {
+    flex-direction: row;
+    gap: 1rem;
+  }
+}
+
+/* 4. Standard Phones (361px - 480px: 375px, 390px, 430px) */
+@media (max-width: 480px) {
+  .cbts-student-content {
+    padding: 1rem 0.75rem;
+  }
+
+  .cbts-student-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.15rem;
+    gap: 0.5rem;
+  }
+
+  .cbts-student-title {
+    font-size: 1.35rem;
+  }
+
+  .cbts-student-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .cbts-admin-btn-exit {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    gap: 0.35rem;
+  }
+
+  .cbts-student-cards-stack {
+    gap: 1rem;
+  }
+
+  .cbts-student-card {
+    padding: 1.15rem 0.95rem;
+    border-radius: 14px;
+  }
+
+  .cbts-student-card-title {
+    font-size: 1.1rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .cbts-student-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .cbts-device-security-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .cbts-btn-register-device {
+    width: 100% !important;
+    text-align: center;
+    justify-content: center;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.9rem !important;
+    display: flex !important;
+    box-sizing: border-box !important;
+  }
+
+  .cbts-bus-seats-row {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding-top: 1rem;
+  }
+}
+
+/* 5. Small Phones (320px - 360px) */
+@media (max-width: 360px) {
+  .cbts-student-content {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .cbts-student-card {
+    padding: 1rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .cbts-student-title {
+    font-size: 1.2rem;
+  }
+
+  .cbts-student-subtitle {
+    font-size: 0.8rem;
+  }
+}
+
+

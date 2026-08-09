@@ -83,6 +83,7 @@ const StudentLogin = () => {
         setSuccessMessage(response.data?.message || 'Login successful');
         setShowSuccess(true);
         
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         setTimeout(() => {
           setShowSuccess(false);
           if (response.data?.user?.role === "admin") {

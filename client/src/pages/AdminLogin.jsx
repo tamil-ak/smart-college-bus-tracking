@@ -89,6 +89,7 @@ const AdminLogin = () => {
         setSuccessMessage(response.data?.message || 'Login successful');
         setShowSuccess(true);
         
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         setTimeout(() => {
           setShowSuccess(false);
           navigate('/admin'); // Redirect to Admin Dashboard
