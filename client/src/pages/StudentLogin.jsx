@@ -88,6 +88,8 @@ const StudentLogin = () => {
           setShowSuccess(false);
           if (response.data?.user?.role === "admin") {
             navigate('/admin');
+          } else if (response.data?.user?.role === "parent") {
+            navigate('/parent-dashboard');
           } else {
             navigate('/student-dashboard');
           }

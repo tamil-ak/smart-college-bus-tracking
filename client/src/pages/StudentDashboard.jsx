@@ -44,6 +44,16 @@ const StudentDashboard = () => {
   const [faceVerifyResult, setFaceVerifyResult] = useState(null);
   const [faceVerifyError, setFaceVerifyError] = useState('');
 
+  // Bus Fee & Payment State
+  const [feeInfo, setFeeInfo] = useState(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeError, setFeeError] = useState('');
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payProcessing, setPayProcessing] = useState(false);
+  const [paySuccessMessage, setPaySuccessMessage] = useState('');
+  const [payErrorMessage, setPayErrorMessage] = useState('');
+  const [studentUtr, setStudentUtr] = useState('');
+
   const qrVideoRef = React.useRef(null);
   const qrCanvasRef = React.useRef(null);
   const qrAnimationRef = React.useRef(null);
@@ -735,6 +745,116 @@ const StudentDashboard = () => {
     }
   };
 
+  // Fetch Student Transport Fee and Live Payment Status from MongoDB
+  const fetchStudentFee = async (studentId) => {
+    if (!studentId) return;
+    try {
+      setFeeLoading(true);
+      setFeeError('');
+      const response = await axios.get(`http://localhost:5000/api/fee/student-fee/${studentId}`);
+      if (response.data && response.data.success) {
+        setFeeInfo(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading student fee information:', err);
+      setFeeError(err.response?.data?.message || 'Failed to load transport fee status.');
+    } finally {
+      setFeeLoading(false);
+    }
+  };
+
+  // Submit UPI Payment with Transaction ID / UTR for Admin Verification
+  const handleProcessPayment = async () => {
+    if (!feeInfo || !feeInfo.fee || !student?._id) return;
+
+    if (!studentUtr || !studentUtr.trim()) {
+      setPayErrorMessage('Please enter the UPI Transaction ID / UTR from your UPI payment app.');
+      return;
+    }
+
+    try {
+      setPayProcessing(true);
+      setPayErrorMessage('');
+      setPaySuccessMessage('');
+
+      const payload = {
+        studentId: student._id,
+        busId: feeInfo.bus?._id || (typeof student.busId === 'object' ? student.busId._id : student.busId),
+        feeId: feeInfo.fee._id,
+        academicYear: feeInfo.fee.academicYear || '2026-2027',
+        amount: feeInfo.fee.amount,
+        transactionId: studentUtr.trim(),
+        paymentMethod: 'UPI Transfer',
+      };
+
+      const response = await axios.post('http://localhost:5000/api/fee/submit-payment', payload);
+
+      if (response.data && response.data.success) {
+        setPaySuccessMessage(response.data.message || 'Payment submitted successfully for verification!');
+        // Refresh fee record directly from MongoDB to reflect updated Pending Verification state
+        await fetchStudentFee(student._id);
+        setTimeout(() => {
+          setPayModalOpen(false);
+          setPaySuccessMessage('');
+          setStudentUtr('');
+        }, 1800);
+      }
+    } catch (err) {
+      console.error('Error submitting fee payment:', err);
+      setPayErrorMessage(err.response?.data?.message || 'Payment submission failed. Please try again.');
+    } finally {
+      setPayProcessing(false);
+    }
+  };
+
+  // Format currency
+  const formatFeeCurrency = (val) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(val || 0);
+  };
+
+  // Format date
+  const formatFeeDate = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Format time (e.g. 10:42 AM)
+  const formatFeeTime = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  // Format timestamp with time
+  const formatFeeDateTime = (dateStr) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
   // Fetch student profile including populated bus assignment details
   useEffect(() => {
     const fetchStudentProfile = async () => {
@@ -764,12 +884,17 @@ const StudentDashboard = () => {
         // Set student state immediately from cached session for instant, non-blank render
         setStudent(parsedUser);
 
+        // Fetch fee status
+        fetchStudentFee(parsedUser._id);
+
         const response = await axios.get(`http://localhost:5000/api/auth/profile/${parsedUser._id}`);
 
         if (response.data && response.data.user) {
           setStudent(response.data.user);
           // Keep localStorage synced
           localStorage.setItem('user', JSON.stringify(response.data.user));
+          // Refresh fee status with latest student data
+          fetchStudentFee(response.data.user._id);
         }
       } catch (err) {
         console.error('Error loading student profile:', err);
@@ -1498,9 +1623,449 @@ const StudentDashboard = () => {
               )}
             </div>
 
+            {/* Bus Transport Fee & Payment Card */}
+            <div className="cbts-student-card">
+              <div className="cbts-device-security-header">
+                <h2 className="cbts-student-card-title" style={{ margin: 0 }}>
+                  Bus Transport Fee & Payment
+                </h2>
+                <div>
+                  {!student?.busId || typeof student.busId !== 'object' ? (
+                    <span className="cbts-device-badge" style={{ background: 'rgba(107, 114, 128, 0.12)', color: '#4B5563', border: '1px solid rgba(107, 114, 128, 0.25)', fontWeight: 600 }}>
+                      No Bus Assigned
+                    </span>
+                  ) : feeLoading ? (
+                    <span className="cbts-device-badge" style={{ background: 'rgba(11, 61, 145, 0.08)', color: 'var(--primary-navy)', border: '1px solid rgba(11, 61, 145, 0.15)', fontWeight: 600 }}>
+                      Checking Fee Status...
+                    </span>
+                  ) : feeInfo?.payment?.status === 'Paid' ? (
+                    <span className="cbts-device-badge cbts-device-badge-registered" style={{ fontWeight: 800, fontSize: '0.86rem', background: '#ECFDF5', color: '#065F46', border: '1.5px solid #10B981' }}>
+                      ● Bus Fee Paid ✓
+                    </span>
+                  ) : (
+                    <span className="cbts-device-badge" style={{ background: 'rgba(245, 158, 11, 0.12)', color: '#B45309', border: '1px solid rgba(245, 158, 11, 0.3)', fontWeight: 700 }}>
+                      Fee Status: Unpaid
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {feeError && (
+                <div className="cbts-form-alert" role="alert" style={{ marginBottom: '1rem' }}>
+                  <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <span>{feeError}</span>
+                </div>
+              )}
+
+              {!student?.busId || typeof student.busId !== 'object' ? (
+                <div className="cbts-empty-state" style={{ padding: '1.75rem 1rem' }}>
+                  <p style={{ margin: 0, color: 'var(--text-dark-secondary)', fontSize: '0.9rem' }}>
+                    Transport fee schedule will be calculated and presented here once your bus allocation is confirmed by the transport administrator.
+                  </p>
+                </div>
+              ) : feeLoading ? (
+                <div className="cbts-loader-container" style={{ padding: '1.5rem 0' }}>
+                  <div className="cbts-loader-spinner" style={{ width: '28px', height: '28px' }}></div>
+                  <p className="cbts-loader-text" style={{ fontSize: '0.85rem' }}>Loading fee schedule from database...</p>
+                </div>
+              ) : !feeInfo?.hasFeeConfigured || !feeInfo?.fee ? (
+                <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '12px', padding: '1.15rem 1.25rem' }}>
+                  <p style={{ margin: 0, color: '#92400E', fontSize: '0.92rem', fontWeight: 600 }}>
+                    Fee schedule for Bus {student.busId.busNumber} has not been published yet by the college transport department.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                  {/* Fee Details Grid */}
+                  <div className="cbts-student-info-grid">
+                    <div className="cbts-info-item">
+                      <span className="cbts-info-label">Assigned Bus</span>
+                      <p className="cbts-info-value" style={{ fontWeight: 700, color: 'var(--primary-navy)' }}>
+                        Bus {feeInfo.bus?.busNumber || student.busId.busNumber}
+                      </p>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-dark-muted)' }}>
+                        {feeInfo.bus?.route || student.busId.route}
+                      </span>
+                    </div>
+
+                    <div className="cbts-info-item">
+                      <span className="cbts-info-label">Academic Year</span>
+                      <p className="cbts-info-value" style={{ fontWeight: 700 }}>
+                        {feeInfo.fee.academicYear}
+                      </p>
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-dark-muted)' }}>
+                        Applies to all student years
+                      </span>
+                    </div>
+
+                    <div className="cbts-info-item">
+                      <span className="cbts-info-label">Bus Fee Amount</span>
+                      <p className="cbts-info-value" style={{ fontSize: '1.2rem', fontWeight: 800, color: '#065F46' }}>
+                        {formatFeeCurrency(feeInfo.fee.amount)}
+                      </p>
+                    </div>
+
+                    <div className="cbts-info-item">
+                      <span className="cbts-info-label">Payment Due Date</span>
+                      <p className="cbts-info-value" style={{ fontWeight: 600 }}>
+                        {formatFeeDate(feeInfo.fee.dueDate)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Payment Status Action / Receipt Section */}
+                  {feeInfo.payment?.status === 'Paid' ? (
+                    <div
+                      style={{
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1.5px solid rgba(16, 185, 129, 0.35)',
+                        borderRadius: '16px',
+                        padding: '1.25rem 1.5rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.85rem' }}>
+                        <div
+                          style={{
+                            background: '#10B981',
+                            color: '#ffffff',
+                            borderRadius: '50%',
+                            width: '24px',
+                            height: '24px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.85rem',
+                            fontWeight: 800,
+                          }}
+                        >
+                          ✓
+                        </div>
+                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#065F46' }}>
+                          Bus Fee Paid ✓
+                        </h4>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', fontSize: '0.86rem' }}>
+                        <div>
+                          <span style={{ color: '#047857', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Amount Paid</span>
+                          <p style={{ margin: '0.15rem 0 0', fontWeight: 800, fontSize: '1.1rem', color: '#065F46' }}>
+                            {formatFeeCurrency(feeInfo.payment.amount)}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ color: '#047857', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Transaction ID / UTR</span>
+                          <p style={{ margin: '0.15rem 0 0', fontWeight: 700, fontFamily: 'monospace', color: 'var(--primary-navy)' }}>
+                            {feeInfo.payment.transactionId || 'TXN-CONFIRMED'}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ color: '#047857', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Paid Date</span>
+                          <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
+                            {formatFeeDate(feeInfo.payment.paidAt)}
+                          </p>
+                        </div>
+                        <div>
+                          <span style={{ color: '#047857', fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase' }}>Paid Time</span>
+                          <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
+                            {formatFeeTime(feeInfo.payment.paidAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        background: 'rgba(11, 61, 145, 0.04)',
+                        border: '1px solid rgba(11, 61, 145, 0.15)',
+                        borderRadius: '16px',
+                        padding: '1.25rem 1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 700, color: 'var(--primary-navy)', fontSize: '0.95rem' }}>
+                            Annual Transport Fee Payment Due
+                          </p>
+                          <p style={{ margin: '0.2rem 0 0', color: 'var(--text-dark-secondary)', fontSize: '0.84rem' }}>
+                            Please settle your transport fee of <strong>{formatFeeCurrency(feeInfo.fee.amount)}</strong> before {formatFeeDate(feeInfo.fee.dueDate)}.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="cbts-btn cbts-btn-primary"
+                          onClick={() => {
+                            setPayErrorMessage('');
+                            setPaySuccessMessage('');
+                            setStudentUtr('');
+                            setPayModalOpen(true);
+                          }}
+                          style={{
+                            padding: '0.7rem 1.6rem',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            borderRadius: '12px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            boxShadow: '0 4px 14px rgba(11, 61, 145, 0.25)',
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="17" height="17" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <line x1="2" y1="10" x2="22" y2="10" />
+                          </svg>
+                          Pay Bus Fee ({formatFeeCurrency(feeInfo.fee.amount)})
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
           </div>
         )}
       </main>
+
+      {/* Student UPI QR Direct Payment Checkout Modal */}
+      {payModalOpen && feeInfo?.fee && (
+        <div
+          className="cbts-qr-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 15, 36, 0.65)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1.5rem',
+          }}
+          onClick={() => {
+            if (!payProcessing) setPayModalOpen(false);
+          }}
+        >
+          <div
+            className="cbts-hero-card"
+            style={{
+              maxWidth: '520px',
+              width: '100%',
+              padding: '2.25rem',
+              borderRadius: '24px',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.25)',
+              position: 'relative',
+              animation: 'fadeInUp 0.25s ease-out',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
+                  Bus Transport Fee Checkout
+                </h2>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.84rem', color: 'var(--text-dark-secondary)' }}>
+                  Academic Year {feeInfo.fee.academicYear} • Bus {feeInfo.bus?.busNumber || student?.busId?.busNumber}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPayModalOpen(false)}
+                disabled={payProcessing}
+                style={{
+                  background: 'rgba(0,0,0,0.05)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-dark-muted)',
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Error / Success Banners */}
+            {payErrorMessage && (
+              <div className="cbts-form-alert" role="alert" style={{ marginBottom: '1rem' }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                </svg>
+                <span>{payErrorMessage}</span>
+              </div>
+            )}
+
+            {paySuccessMessage && (
+              <div className="cbts-form-alert" role="alert" style={{ marginBottom: '1rem', borderColor: '#10B981', background: 'rgba(16, 185, 129, 0.1)', color: '#065F46' }}>
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span>{paySuccessMessage}</span>
+              </div>
+            )}
+
+            {/* Amount Summary Card */}
+            <div
+              style={{
+                background: 'rgba(11, 61, 145, 0.04)',
+                border: '1px solid rgba(11, 61, 145, 0.12)',
+                borderRadius: '16px',
+                padding: '1.15rem 1.25rem',
+                marginBottom: '1.25rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dark-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Total Fee Payable
+                </span>
+                <p style={{ margin: '0.1rem 0 0', fontSize: '1.55rem', fontWeight: 800, color: '#065F46' }}>
+                  {formatFeeCurrency(feeInfo.fee.amount)}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span className="cbts-dept-badge" style={{ background: 'rgba(11, 61, 145, 0.08)', color: 'var(--primary-navy)' }}>
+                  Bus {feeInfo.bus?.busNumber}
+                </span>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.78rem', color: 'var(--text-dark-muted)' }}>
+                  Due: {formatFeeDate(feeInfo.fee.dueDate)}
+                </p>
+              </div>
+            </div>
+
+            {/* Active UPI QR Display */}
+            {feeInfo.upiQr?.isConfigured && feeInfo.upiQr?.upiQrImage ? (
+              <div
+                style={{
+                  background: 'rgba(11, 61, 145, 0.03)',
+                  border: '1.5px solid rgba(11, 61, 145, 0.12)',
+                  borderRadius: '18px',
+                  padding: '1.25rem',
+                  marginBottom: '1.25rem',
+                  textAlign: 'center',
+                }}
+              >
+                <p style={{ margin: '0 0 0.85rem 0', fontWeight: 700, color: 'var(--primary-navy)', fontSize: '0.9rem' }}>
+                  Scan this QR using Google Pay / PhonePe / Paytm or any UPI app.
+                </p>
+
+                <div
+                  style={{
+                    background: '#ffffff',
+                    padding: '0.75rem',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
+                    display: 'inline-block',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                  }}
+                >
+                  <img
+                    src={feeInfo.upiQr.upiQrImage}
+                    alt="Official College Bus Fee UPI QR"
+                    style={{
+                      width: '180px',
+                      height: '180px',
+                      objectFit: 'contain',
+                      display: 'block',
+                      borderRadius: '6px',
+                    }}
+                  />
+                </div>
+
+                {feeInfo.upiQr.upiName && (
+                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
+                    {feeInfo.upiQr.upiName}
+                  </p>
+                )}
+
+                {feeInfo.upiQr.upiId && (
+                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-dark-muted)', fontFamily: 'monospace' }}>
+                    UPI ID: {feeInfo.upiQr.upiId}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.06)',
+                  border: '1.5px solid rgba(239, 68, 68, 0.25)',
+                  borderRadius: '16px',
+                  padding: '1.5rem',
+                  marginBottom: '1.25rem',
+                  textAlign: 'center',
+                  color: '#991B1B',
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.92rem' }}>
+                  UPI payment QR is not configured yet. Please contact the administrator.
+                </p>
+              </div>
+            )}
+
+            {/* UPI UTR Input */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label className="cbts-form-label" style={{ fontSize: '0.85rem' }}>
+                UPI Transaction ID / UTR Number <span style={{ color: '#DC2626' }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={studentUtr}
+                onChange={(e) => setStudentUtr(e.target.value)}
+                className="cbts-form-input"
+                style={{ fontSize: '0.92rem', padding: '0.65rem 0.85rem' }}
+                placeholder="e.g. 423984719284 or UPI Ref No"
+                disabled={!feeInfo.upiQr?.isConfigured || payProcessing}
+              />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-dark-muted)', marginTop: '0.35rem', display: 'block' }}>
+                Enter the 12-digit UPI reference / UTR number from your successful payment receipt.
+              </span>
+            </div>
+
+            {/* Modal Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.25rem' }}>
+              <button
+                type="button"
+                className="cbts-btn cbts-btn-secondary"
+                onClick={() => setPayModalOpen(false)}
+                disabled={payProcessing}
+                style={{ padding: '0.65rem 1.25rem' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="cbts-btn cbts-btn-primary"
+                onClick={handleProcessPayment}
+                disabled={payProcessing || !studentUtr.trim() || !feeInfo.upiQr?.isConfigured}
+                style={{
+                  padding: '0.65rem 1.75rem',
+                  fontWeight: 800,
+                  fontSize: '0.92rem',
+                }}
+              >
+                {payProcessing ? 'Confirming Payment...' : 'Payment Completed'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
