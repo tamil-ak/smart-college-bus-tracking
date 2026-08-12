@@ -10,23 +10,32 @@ const userSchema = new mongoose.Schema(
 
     registerNumber: {
       type: String,
-      required: true,
-      unique: true,
+      required: function () {
+        return this.role === "student";
+      },
+      sparse: true,
+      trim: true,
     },
 
     department: {
       type: String,
-      required: true,
+      required: function () {
+        return this.role === "student";
+      },
     },
 
     year: {
       type: String,
-      required: true,
+      required: function () {
+        return this.role === "student";
+      },
     },
 
     section: {
       type: String,
-      required: true,
+      required: function () {
+        return this.role === "student";
+      },
     },
 
     email: {
@@ -34,11 +43,13 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
+      trim: true,
     },
 
     phone: {
       type: String,
       required: true,
+      trim: true,
     },
 
     password: {
@@ -55,13 +66,26 @@ const userSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["Pending", "Approved", "Rejected", "Assigned"],
-      default: "Pending",
+      default: "Approved",
     },
 
     busId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bus",
       default: null,
+    },
+
+    // Parent to Student mapping
+    studentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    childRegisterNumber: {
+      type: String,
+      default: null,
+      trim: true,
     },
 
     registeredDeviceId: {

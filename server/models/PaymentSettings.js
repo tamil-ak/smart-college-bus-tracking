@@ -1,0 +1,29 @@
+const mongoose = require("mongoose");
+
+const paymentSettingsSchema = new mongoose.Schema(
+  {
+    upiQrImage: {
+      type: String,
+      required: [true, "UPI QR Image is required"],
+    },
+    upiId: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    upiName: {
+      type: String,
+      trim: true,
+      default: "College Bus Transport Fee",
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+module.exports = mongoose.model("PaymentSettings", paymentSettingsSchema);

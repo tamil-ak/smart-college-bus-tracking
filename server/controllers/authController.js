@@ -16,7 +16,7 @@ const registerStudent = async (req, res) => {
 
     // Check existing user
     const existingUser = await User.findOne({
-      $or: [{ email }, { registerNumber }],
+      $or: [{ email: email.toLowerCase().trim() }, { registerNumber: registerNumber.trim() }],
     });
 
     if (existingUser) {
@@ -30,13 +30,13 @@ const registerStudent = async (req, res) => {
 
     // Create student
     const user = await User.create({
-      name,
-      registerNumber,
+      name: name.trim(),
+      registerNumber: registerNumber.trim(),
       department,
       year,
       section,
-      email,
-      phone,
+      email: email.toLowerCase().trim(),
+      phone: phone.trim(),
       password: hashedPassword,
       role: "student",
       status: "Pending",
@@ -55,6 +55,80 @@ const registerStudent = async (req, res) => {
   }
 };
 
+/**
+ * Register Parent & Map to Existing Student
+ */
+const registerParent = async (req, res) => {
+  try {
+    const { name, email, phone, password, childRegisterNumber } = req.body;
+
+    if (!name || !email || !phone || !password || !childRegisterNumber) {
+      return res.status(400).json({
+        success: false,
+        message: "Parent Name, Email, Phone, Password, and Child Student Register Number are required.",
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanChildRegNo = childRegisterNumber.trim();
+
+    // Check if parent email already exists
+    const existingParent = await User.findOne({ email: cleanEmail });
+    if (existingParent) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
+    }
+
+    // Find the existing student in MongoDB using the register number
+    const existingStudent = await User.findOne({
+      role: "student",
+      registerNumber: { $regex: new RegExp(`^${cleanChildRegNo}$`, "i") },
+    }).populate("busId");
+
+    // If student does not exist, reject with exact required error message
+    if (!existingStudent) {
+      return res.status(404).json({
+        success: false,
+        message: "Student Register Number not found.",
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create parent user mapped to the existing student
+    const parentUser = await User.create({
+      name: name.trim(),
+      email: cleanEmail,
+      phone: phone.trim(),
+      password: hashedPassword,
+      role: "parent",
+      status: "Approved",
+      studentId: existingStudent._id,
+      childRegisterNumber: existingStudent.registerNumber,
+    });
+
+    const populatedParent = await User.findById(parentUser._id).populate({
+      path: "studentId",
+      populate: { path: "busId" },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `Parent registered successfully and linked to student ${existingStudent.name} (${existingStudent.registerNumber}).`,
+      user: populatedParent,
+    });
+  } catch (error) {
+    console.error("Error registering parent:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to register parent account.",
+    });
+  }
+};
+
 const loginStudent = async (req, res) => {
   try {
     const { identifier, password } = req.body;
@@ -65,13 +139,19 @@ const loginStudent = async (req, res) => {
       });
     }
 
-    // Find student using email or registerNumber
+    const cleanIdentifier = identifier.trim();
+
+    // Find user using email or registerNumber or phone
     const user = await User.findOne({
       $or: [
-        { email: identifier.toLowerCase() },
-        { registerNumber: identifier }
+        { email: cleanIdentifier.toLowerCase() },
+        { registerNumber: cleanIdentifier },
+        { phone: cleanIdentifier }
       ]
-    });
+    }).populate({
+      path: "studentId",
+      populate: { path: "busId" }
+    }).populate("busId");
 
     if (!user) {
       return res.status(400).json({
@@ -91,8 +171,8 @@ const loginStudent = async (req, res) => {
     const isDeviceRegistered = Boolean(user.registeredDeviceId);
     const deviceStatus = isDeviceRegistered ? "Registered" : "Device not registered";
 
-    // If role === "admin", return success immediately without checking status
-    if (user.role === "admin") {
+    // If role === "admin" or "parent", return success immediately without pending status check
+    if (user.role === "admin" || user.role === "parent") {
       return res.status(200).json({
         success: true,
         message: "Login successful",
@@ -102,7 +182,7 @@ const loginStudent = async (req, res) => {
       });
     }
 
-    // If role === "student", check status
+    // If role === "student", check approval status
     if (user.role === "student") {
       if (user.status === "Pending") {
         return res.status(400).json({
@@ -149,6 +229,35 @@ const getStudentProfile = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+const getParentStudentProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const parent = await User.findById(id).populate({
+      path: "studentId",
+      populate: { path: "busId" },
+    });
+
+    if (!parent) {
+      return res.status(404).json({
+        success: false,
+        message: "Parent account not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user: parent,
+      student: parent.studentId,
+    });
+  } catch (error) {
+    console.error("Error fetching parent-student profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch student data for parent.",
     });
   }
 };
@@ -470,8 +579,10 @@ const verifyAiFace = async (req, res) => {
 
 module.exports = {
   registerStudent,
+  registerParent,
   loginStudent,
   getStudentProfile,
+  getParentStudentProfile,
   registerDevice,
   registerFace,
   registerAiFace,
