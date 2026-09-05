@@ -807,6 +807,107 @@ const StudentDashboard = () => {
     }
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleRazorpayPayment = async () => {
+    if (!feeInfo || !feeInfo.fee || !student?._id) return;
+
+    try {
+      setPayProcessing(true);
+      setPayErrorMessage('');
+      setPaySuccessMessage('');
+
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setPayErrorMessage('Failed to load Razorpay SDK. Please check your internet connection.');
+        setPayProcessing(false);
+        return;
+      }
+
+      // Initiate order creation on backend
+      const orderRes = await axios.post('http://localhost:5000/api/payment/create-order', {
+        studentId: student._id,
+        academicYear: feeInfo.fee.academicYear || '2026-2027',
+      });
+
+      if (orderRes.data && orderRes.data.success) {
+        const { order, keyId } = orderRes.data;
+
+        const options = {
+          key: keyId,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'CBTS College Bus Fee',
+          description: `Annual Bus Fee AY ${feeInfo.fee.academicYear}`,
+          order_id: order.id,
+          handler: async function (response) {
+            try {
+              setPayProcessing(true);
+              setPayErrorMessage('');
+              setPaySuccessMessage('Verifying payment signature...');
+
+              const verifyRes = await axios.post('http://localhost:5000/api/payment/verify', {
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+
+              if (verifyRes.data && verifyRes.data.success) {
+                setPaySuccessMessage('Payment Successful ✓ Fee payment recorded.');
+                // Refresh student fee status
+                await fetchStudentFee(student._id);
+                setTimeout(() => {
+                  setPayModalOpen(false);
+                  setPaySuccessMessage('');
+                }, 2000);
+              } else {
+                setPayErrorMessage(verifyRes.data.message || 'Payment verification failed.');
+              }
+            } catch (verifyErr) {
+              console.error('Payment verification error:', verifyErr);
+              setPayErrorMessage(verifyErr.response?.data?.message || 'Payment verification failed.');
+            } finally {
+              setPayProcessing(false);
+            }
+          },
+          prefill: {
+            name: student.name || '',
+            email: student.email || '',
+            contact: student.phone || '',
+          },
+          theme: {
+            color: '#0B3D91',
+          },
+          modal: {
+            ondismiss: function () {
+              setPayProcessing(false);
+              setPayErrorMessage('Payment cancelled by user.');
+            },
+          },
+        };
+
+        const rzp1 = new window.Razorpay(options);
+        rzp1.open();
+      } else {
+        setPayErrorMessage(orderRes.data.message || 'Failed to initiate Razorpay order.');
+        setPayProcessing(false);
+      }
+    } catch (err) {
+      console.error('Razorpay payment error:', err);
+      setPayErrorMessage(err.response?.data?.message || 'Payment initiation failed. Please try again.');
+      setPayProcessing(false);
+    }
+  };
+
   // Format currency
   const formatFeeCurrency = (val) => {
     return new Intl.NumberFormat('en-IN', {
@@ -1949,92 +2050,54 @@ const StudentDashboard = () => {
               </div>
             </div>
 
-            {/* Active UPI QR Display */}
-            {feeInfo.upiQr?.isConfigured && feeInfo.upiQr?.upiQrImage ? (
-              <div
-                style={{
-                  background: 'rgba(11, 61, 145, 0.03)',
-                  border: '1.5px solid rgba(11, 61, 145, 0.12)',
-                  borderRadius: '18px',
-                  padding: '1.25rem',
-                  marginBottom: '1.25rem',
-                  textAlign: 'center',
-                }}
-              >
-                <p style={{ margin: '0 0 0.85rem 0', fontWeight: 700, color: 'var(--primary-navy)', fontSize: '0.9rem' }}>
-                  Scan this QR using Google Pay / PhonePe / Paytm or any UPI app.
-                </p>
+            {/* Razorpay Online Payment Option */}
+            <div
+              style={{
+                background: 'rgba(11, 61, 145, 0.03)',
+                border: '1.5px solid rgba(11, 61, 145, 0.12)',
+                borderRadius: '18px',
+                padding: '1.5rem',
+                marginBottom: '1.25rem',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#0B3D91" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
+                  Secure Checkout by Razorpay
+                </h4>
+              </div>
 
-                <div
-                  style={{
-                    background: '#ffffff',
-                    padding: '0.75rem',
-                    borderRadius: '12px',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-                    display: 'inline-block',
-                    border: '1px solid rgba(0,0,0,0.08)',
-                  }}
-                >
-                  <img
-                    src={feeInfo.upiQr.upiQrImage}
-                    alt="Official College Bus Fee UPI QR"
-                    style={{
-                      width: '180px',
-                      height: '180px',
-                      objectFit: 'contain',
-                      display: 'block',
-                      borderRadius: '6px',
-                    }}
-                  />
+              <p style={{ margin: '0 0 1rem 0', color: 'var(--text-dark-secondary)', fontSize: '0.86rem', lineHeight: '1.4' }}>
+                You will be redirected to the secure Razorpay payment modal where you can pay using <strong>UPI (GPay, PhonePe, Paytm)</strong>, <strong>Credit / Debit Cards</strong>, <strong>Netbanking</strong>, or <strong>Wallets</strong>.
+              </p>
+
+              <div style={{ borderTop: '1px solid rgba(11, 61, 145, 0.12)', paddingTop: '1rem' }}>
+                <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.8rem', color: 'var(--text-dark-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Prefill Information
+                </h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', fontSize: '0.84rem' }}>
+                  <div>
+                    <span style={{ color: 'var(--text-dark-muted)', display: 'block' }}>Name</span>
+                    <strong style={{ color: 'var(--text-dark-primary)' }}>{student?.name}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-dark-muted)', display: 'block' }}>Register No.</span>
+                    <strong style={{ color: 'var(--text-dark-primary)' }}>{student?.registerNumber || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-dark-muted)', display: 'block' }}>Email</span>
+                    <strong style={{ color: 'var(--text-dark-primary)' }}>{student?.email || 'N/A'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: 'var(--text-dark-muted)', display: 'block' }}>Contact Phone</span>
+                    <strong style={{ color: 'var(--text-dark-primary)' }}>{student?.phone || 'N/A'}</strong>
+                  </div>
                 </div>
-
-                {feeInfo.upiQr.upiName && (
-                  <p style={{ margin: '0.5rem 0 0', fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
-                    {feeInfo.upiQr.upiName}
-                  </p>
-                )}
-
-                {feeInfo.upiQr.upiId && (
-                  <p style={{ margin: '0.15rem 0 0', fontSize: '0.8rem', color: 'var(--text-dark-muted)', fontFamily: 'monospace' }}>
-                    UPI ID: {feeInfo.upiQr.upiId}
-                  </p>
-                )}
               </div>
-            ) : (
-              <div
-                style={{
-                  background: 'rgba(239, 68, 68, 0.06)',
-                  border: '1.5px solid rgba(239, 68, 68, 0.25)',
-                  borderRadius: '16px',
-                  padding: '1.5rem',
-                  marginBottom: '1.25rem',
-                  textAlign: 'center',
-                  color: '#991B1B',
-                }}
-              >
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.92rem' }}>
-                  UPI payment QR is not configured yet. Please contact the administrator.
-                </p>
-              </div>
-            )}
-
-            {/* UPI UTR Input */}
-            <div style={{ marginBottom: '1.25rem' }}>
-              <label className="cbts-form-label" style={{ fontSize: '0.85rem' }}>
-                UPI Transaction ID / UTR Number <span style={{ color: '#DC2626' }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={studentUtr}
-                onChange={(e) => setStudentUtr(e.target.value)}
-                className="cbts-form-input"
-                style={{ fontSize: '0.92rem', padding: '0.65rem 0.85rem' }}
-                placeholder="e.g. 423984719284 or UPI Ref No"
-                disabled={!feeInfo.upiQr?.isConfigured || payProcessing}
-              />
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-dark-muted)', marginTop: '0.35rem', display: 'block' }}>
-                Enter the 12-digit UPI reference / UTR number from your successful payment receipt.
-              </span>
             </div>
 
             {/* Modal Actions */}
@@ -2052,15 +2115,15 @@ const StudentDashboard = () => {
               <button
                 type="button"
                 className="cbts-btn cbts-btn-primary"
-                onClick={handleProcessPayment}
-                disabled={payProcessing || !studentUtr.trim() || !feeInfo.upiQr?.isConfigured}
+                onClick={handleRazorpayPayment}
+                disabled={payProcessing}
                 style={{
                   padding: '0.65rem 1.75rem',
                   fontWeight: 800,
                   fontSize: '0.92rem',
                 }}
               >
-                {payProcessing ? 'Confirming Payment...' : 'Payment Completed'}
+                {payProcessing ? 'Processing Payment...' : 'Pay via Razorpay'}
               </button>
             </div>
           </div>

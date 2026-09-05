@@ -64,6 +64,16 @@ const studentFeePaymentSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    orderId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+    paymentId: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     paidAt: {
       type: Date,
       default: null,

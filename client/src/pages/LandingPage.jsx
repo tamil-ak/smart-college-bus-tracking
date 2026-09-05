@@ -10,11 +10,11 @@ import '../styles/landing.css';
 import '../styles/components.css';
 
 /**
- * Enhanced Premium CBTS Landing Page
+ * CBTS landing page
  */
 const LandingPage = () => {
   const navigate = useNavigate();
-  
+
   const handleSignIn = () => {
     navigate('/login/student');
   };
@@ -28,37 +28,26 @@ const LandingPage = () => {
       {/* 1. Sticky Responsive Navbar */}
       <Navbar />
 
-      {/* 2. Background Blob Animations */}
+      {/* Background atmosphere */}
       <div className="cbts-bg-blobs" aria-hidden="true">
         <div className="cbts-blob cbts-blob-1"></div>
         <div className="cbts-blob cbts-blob-2"></div>
         <div className="cbts-blob cbts-blob-3"></div>
       </div>
 
-      {/* 3. Main Center Hero Area */}
+      {/* Wide hero area */}
       <main className="cbts-main-content">
-        <div className="cbts-card-wrapper">
-          {/* Subtle design accents floating around the card */}
-          <div className="cbts-glass-accent-1" aria-hidden="true"></div>
-          <div className="cbts-glass-accent-2" aria-hidden="true"></div>
-          
-          <div className="cbts-hero-card">
-            {/* Centered Professional SVG Logo (with Float Animation) */}
+        <div className="cbts-hero-content">
+          <section className="cbts-hero-copy" aria-labelledby="cbts-title">
             <Logo />
-
-            {/* Typography Headers */}
-            <h1 className="cbts-title-main">CBTS</h1>
+            <h1 id="cbts-title" className="cbts-title-main">CBTS</h1>
             <h2 className="cbts-title-sub">College Bus Tracking System</h2>
             <p className="cbts-tagline">Track. Connect. Travel Smart.</p>
-
-            {/* Three Feature Badges */}
             <div className="cbts-badges-container">
               <FeatureBadge label="Safe" />
               <FeatureBadge label="Reliable" />
               <FeatureBadge label="On Time" />
             </div>
-
-            {/* Premium Call to Action Buttons */}
             <div className="cbts-btn-group">
               <Button variant="primary" onClick={handleSignIn}>
                 Sign In
@@ -67,16 +56,14 @@ const LandingPage = () => {
                 Sign Up
               </Button>
             </div>
-          </div>
+          </section>
+
+          <section className="cbts-hero-visual" aria-label="College campus and CBTS bus">
+            <div className="cbts-visual-ring" aria-hidden="true"></div>
+            <CampusIllustration />
+          </section>
         </div>
       </main>
-
-      {/* 4. Bottom Campus Line-Art Illustration */}
-      <div style={{ width: '100%', zIndex: 2 }}>
-        <CampusIllustration />
-      </div>
-
-      {/* 5. Semantic Page Footer */}
       <Footer />
     </div>
   );
