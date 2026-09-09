@@ -1,5 +1,33 @@
 const mongoose = require("mongoose");
 const Bus = require("../models/Bus");
+const College = require("../models/College");
+const User = require("../models/User");
+
+/**
+ * Helper to resolve authenticated user and target collegeId
+ */
+const getRequestCollegeId = async (req) => {
+  const userId = req.headers["x-user-id"] || (req.body && req.body.userId);
+  if (userId) {
+    const user = await User.findById(userId);
+    if (user && user.role !== "super_admin" && user.collegeId) {
+      return user.collegeId.toString();
+    }
+  }
+  const headerCol = req.headers["x-college-id"];
+  if (headerCol && headerCol !== "ALL" && headerCol !== "null" && headerCol !== "undefined") {
+    return headerCol;
+  }
+  const queryCol = req.query ? req.query.collegeId : null;
+  if (queryCol && queryCol !== "ALL" && queryCol !== "null" && queryCol !== "undefined") {
+    return queryCol;
+  }
+  const bodyCol = req.body ? req.body.collegeId : null;
+  if (bodyCol && bodyCol !== "ALL" && bodyCol !== "null" && bodyCol !== "undefined") {
+    return bodyCol;
+  }
+  return null;
+};
 
 /**
  * Add a new bus record to database
@@ -14,6 +42,7 @@ const addBus = async (req, res) => {
       totalSeats,
       availableSeats,
       status,
+      collegeId,
     } = req.body;
 
     // Validate request data
@@ -23,29 +52,38 @@ const addBus = async (req, res) => {
       });
     }
 
-    // Check if the bus number already exists
-    const existingBus = await Bus.findOne({ busNumber });
+    let targetCollegeId = await getRequestCollegeId(req) || collegeId;
+    if (!targetCollegeId) {
+      const defaultCol = await College.findOne({ code: "MAIN" });
+      if (defaultCol) targetCollegeId = defaultCol._id;
+    }
+
+    // Check if the bus number already exists in this college
+    const existingBus = await Bus.findOne({ busNumber: busNumber.trim(), collegeId: targetCollegeId });
     if (existingBus) {
       return res.status(400).json({
-        message: `Bus number ${busNumber} already exists.`,
+        message: `Bus number ${busNumber} already exists for this college.`,
       });
     }
 
     // Create the bus document
     const bus = await Bus.create({
-      busNumber,
-      driverName,
-      driverPhone,
-      route,
-      totalSeats,
-      availableSeats,
+      busNumber: busNumber.trim(),
+      collegeId: targetCollegeId,
+      driverName: driverName.trim(),
+      driverPhone: driverPhone.trim(),
+      route: route.trim(),
+      totalSeats: Number(totalSeats),
+      availableSeats: Number(availableSeats),
       status: status || "Active",
     });
+
+    const populatedBus = await Bus.findById(bus._id).populate("collegeId", "name code");
 
     res.status(201).json({
       success: true,
       message: "Bus added successfully.",
-      bus,
+      bus: populatedBus,
     });
   } catch (error) {
     res.status(500).json({
@@ -60,7 +98,14 @@ const addBus = async (req, res) => {
  */
 const getAllBuses = async (req, res) => {
   try {
-    const buses = await Bus.find().sort({ createdAt: -1 });
+    const targetCollegeId = await getRequestCollegeId(req);
+    const query = {};
+
+    if (targetCollegeId) {
+      query.collegeId = targetCollegeId;
+    }
+
+    const buses = await Bus.find(query).populate("collegeId", "name code").sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       buses,
@@ -76,6 +121,17 @@ const getAllBuses = async (req, res) => {
 const updateBus = async (req, res) => {
   try {
     const { id } = req.params;
+    const targetCollegeId = await getRequestCollegeId(req);
+
+    const busToUpdate = await Bus.findById(id);
+    if (!busToUpdate) {
+      return res.status(404).json({ message: "Bus not found" });
+    }
+
+    if (targetCollegeId && busToUpdate.collegeId && busToUpdate.collegeId.toString() !== targetCollegeId) {
+      return res.status(403).json({ message: "Forbidden: You cannot modify a bus belonging to another college." });
+    }
+
     const {
       busNumber,
       driverName,
@@ -86,30 +142,20 @@ const updateBus = async (req, res) => {
       status,
     } = req.body;
 
-    const updatedBus = await Bus.findByIdAndUpdate(
-      id,
-      {
-        busNumber,
-        driverName,
-        driverPhone,
-        route,
-        totalSeats,
-        availableSeats,
-        status,
-      },
-      { new: true }
-    );
+    if (busNumber) busToUpdate.busNumber = busNumber;
+    if (driverName) busToUpdate.driverName = driverName;
+    if (driverPhone) busToUpdate.driverPhone = driverPhone;
+    if (route) busToUpdate.route = route;
+    if (totalSeats !== undefined) busToUpdate.totalSeats = totalSeats;
+    if (availableSeats !== undefined) busToUpdate.availableSeats = availableSeats;
+    if (status) busToUpdate.status = status;
 
-    if (!updatedBus) {
-      return res.status(404).json({
-        message: "Bus not found",
-      });
-    }
+    await busToUpdate.save();
 
     res.status(200).json({
       success: true,
       message: "Bus updated successfully.",
-      bus: updatedBus,
+      bus: busToUpdate,
     });
   } catch (error) {
     res.status(500).json({
@@ -122,19 +168,23 @@ const updateBus = async (req, res) => {
 const deleteBus = async (req, res) => {
   try {
     const { id } = req.params;
+    const targetCollegeId = await getRequestCollegeId(req);
 
-    const deletedBus = await Bus.findByIdAndDelete(id);
-
-    if (!deletedBus) {
-      return res.status(404).json({
-        message: "Bus not found",
-      });
+    const busToDelete = await Bus.findById(id);
+    if (!busToDelete) {
+      return res.status(404).json({ message: "Bus not found" });
     }
+
+    if (targetCollegeId && busToDelete.collegeId && busToDelete.collegeId.toString() !== targetCollegeId) {
+      return res.status(403).json({ message: "Forbidden: You cannot delete a bus belonging to another college." });
+    }
+
+    await Bus.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
       message: "Bus deleted successfully.",
-      bus: deletedBus,
+      bus: busToDelete,
     });
   } catch (error) {
     res.status(500).json({

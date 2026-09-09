@@ -8,6 +8,7 @@ const adminRoutes = require("./routes/adminRoutes");
 const busRoutes = require("./routes/busRoutes");
 const feeRoutes = require("./routes/feeRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const collegeRoutes = require("./routes/collegeRoutes");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/bus", busRoutes);
 app.use("/api/fee", feeRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/colleges", collegeRoutes);
 
 app.get("/", (req, res) => {
     res.send("CBTS Backend Running...");

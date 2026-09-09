@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Footer from '../components/Footer';
@@ -10,6 +10,7 @@ import '../styles/register.css';
  */
 const StudentRegister = () => {
   const navigate = useNavigate();
+  const [colleges, setColleges] = useState([]);
 
   // Form Fields State
   const [formFields, setFormFields] = useState({
@@ -22,8 +23,27 @@ const StudentRegister = () => {
     phone: '',
     password: '',
     confirmPassword: '',
+    collegeId: '',
     agreeTerms: false,
   });
+
+  // Fetch available colleges
+  useEffect(() => {
+    const fetchColleges = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/colleges/all");
+        if (res.data && res.data.colleges) {
+          setColleges(res.data.colleges);
+          if (res.data.colleges.length > 0) {
+            setFormFields((prev) => ({ ...prev, collegeId: res.data.colleges[0]._id }));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load colleges:", err);
+      }
+    };
+    fetchColleges();
+  }, []);
 
   // Validation Errors State
   const [errors, setErrors] = useState({});
@@ -63,6 +83,7 @@ const StudentRegister = () => {
       'phone',
       'password',
       'confirmPassword',
+      'collegeId',
     ];
 
     requiredFields.forEach((field) => {
@@ -114,7 +135,8 @@ const StudentRegister = () => {
         section: formFields.section,
         email: formFields.email,
         phone: formFields.phone,
-        password: formFields.password
+        password: formFields.password,
+        collegeId: formFields.collegeId,
       };
 
       console.log("Sending registration request data:", formData);
@@ -131,10 +153,8 @@ const StudentRegister = () => {
       } catch (err) {
         console.error("Axios registration error:", err);
         if (err.response) {
-          // If the backend returns an error, display error.response.data.message
           setGlobalError(err.response.data?.message || 'Registration failed');
         } else {
-          // If there is no response, display "Cannot connect to backend server."
           setGlobalError('Cannot connect to backend server.');
         }
       }
@@ -181,6 +201,27 @@ const StudentRegister = () => {
 
           <form onSubmit={handleSubmit} noValidate>
             <div className="cbts-form-grid">
+              {/* Select College */}
+              <div className={`cbts-form-group grid-span-full ${errors.collegeId ? 'has-error' : ''}`}>
+                <label className="cbts-form-label" htmlFor="collegeId">Select College</label>
+                <select
+                  id="collegeId"
+                  name="collegeId"
+                  className="cbts-form-input"
+                  value={formFields.collegeId}
+                  onChange={handleChange}
+                  required
+                >
+                  {colleges.length === 0 && <option value="">Loading colleges...</option>}
+                  {colleges.map((c) => (
+                    <option key={c._id} value={c._id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                </select>
+                {errors.collegeId && <span className="cbts-error-text">{errors.collegeId}</span>}
+              </div>
+
               {/* Full Name */}
               <div className={`cbts-form-group grid-span-full ${errors.fullName ? 'has-error' : ''}`}>
                 <label className="cbts-form-label" htmlFor="fullName">Full Name</label>

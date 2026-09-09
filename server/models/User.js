@@ -59,13 +59,20 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["student", "parent", "management", "admin"],
+      enum: ["student", "parent", "management", "admin", "college_admin", "super_admin"],
       default: "student",
+    },
+
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      required: false,
+      default: null,
     },
 
     status: {
       type: String,
-      enum: ["Pending", "Approved", "Rejected", "Assigned"],
+      enum: ["Pending", "Approved", "Rejected", "Assigned", "pending", "approved", "rejected", "assigned"],
       default: "Approved",
     },
 
@@ -111,6 +118,11 @@ const userSchema = new mongoose.Schema(
     aiFaceEmbedding: {
       type: [Number],
       default: [],
+    },
+
+    profileImage: {
+      type: String,
+      default: null,
     },
   },
   {

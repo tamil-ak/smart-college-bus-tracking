@@ -54,6 +54,14 @@ const StudentDashboard = () => {
   const [payErrorMessage, setPayErrorMessage] = useState('');
   const [studentUtr, setStudentUtr] = useState('');
 
+  // Student Profile Picture Upload State
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
+  const [profileError, setProfileError] = useState('');
+  const profileFileInputRef = React.useRef(null);
+
   const qrVideoRef = React.useRef(null);
   const qrCanvasRef = React.useRef(null);
   const qrAnimationRef = React.useRef(null);
@@ -64,6 +72,76 @@ const StudentDashboard = () => {
   useEffect(() => {
     studentRef.current = student;
   }, [student]);
+
+  // Handle local file selection for profile picture
+  const handleProfileFileSelect = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    setProfileError('');
+    setProfileMessage('');
+
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      setProfileError('Invalid image format. Please select a JPG, JPEG, PNG, or WEBP photo.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileError('File size exceeds 5MB limit. Please select a smaller image.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Upload and Save Profile Picture
+  const handleSaveProfileImage = async () => {
+    if (!previewImage) {
+      setProfileError('Please select an image file first.');
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+      setProfileError('');
+      setProfileMessage('');
+
+      const res = await axios.post(
+        'http://localhost:5000/api/auth/upload-profile-image',
+        {
+          userId: student._id,
+          image: previewImage,
+        },
+        {
+          headers: {
+            'x-user-id': student._id,
+          },
+        }
+      );
+
+      if (res.data && res.data.success) {
+        const updatedStudent = res.data.user || { ...student, profileImage: res.data.profileImage };
+        setStudent(updatedStudent);
+        localStorage.setItem('user', JSON.stringify(updatedStudent));
+        setProfileMessage('Profile picture updated successfully!');
+        setTimeout(() => {
+          setProfileModalOpen(false);
+          setPreviewImage(null);
+          setProfileMessage('');
+        }, 1200);
+      }
+    } catch (err) {
+      console.error('Error saving profile picture:', err);
+      setProfileError(err.response?.data?.message || 'Failed to upload profile picture.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Extract 128-dimensional normalized face embedding vector from canvas
   const extractFaceEmbedding = (canvas) => {
@@ -1025,10 +1103,91 @@ const StudentDashboard = () => {
 
       <main className="cbts-student-content">
         {/* Header */}
+        {/* Header with Circular Profile Avatar */}
         <header className="cbts-student-header">
-          <div className="cbts-student-title-group">
-            <h1 className="cbts-student-title">Student Portal</h1>
-            <p className="cbts-student-subtitle">Welcome back, {student?.name || 'Student'}!</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
+            {/* Student Circular Avatar */}
+            <div
+              style={{ position: 'relative', cursor: 'pointer' }}
+              onClick={() => {
+                setPreviewImage(null);
+                setProfileError('');
+                setProfileMessage('');
+                setProfileModalOpen(true);
+              }}
+              title="Click to edit profile picture"
+            >
+              {student?.profileImage ? (
+                <img
+                  src={student.profileImage.startsWith('http') ? student.profileImage : `http://localhost:5000${student.profileImage}`}
+                  alt={student.name || 'Student Profile'}
+                  style={{
+                    width: '76px',
+                    height: '76px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid #3B82F6',
+                    boxShadow: '0 4px 14px rgba(59, 130, 246, 0.25)',
+                    background: '#ffffff',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '76px',
+                    height: '76px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.8rem',
+                    fontWeight: 800,
+                    border: '3px solid #ffffff',
+                    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.15)',
+                  }}
+                >
+                  {(student?.name || 'S').charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              {/* Camera Edit Badge */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '2px',
+                  right: '2px',
+                  background: '#3B82F6',
+                  color: '#ffffff',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '2px solid #ffffff',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="cbts-student-title-group">
+              <h1 className="cbts-student-title">Student Portal</h1>
+              <p className="cbts-student-subtitle">
+                Welcome back, {student?.name || 'Student'}!
+                {student?.collegeId?.name && (
+                  <span style={{ marginLeft: '10px', background: 'rgba(11, 61, 145, 0.1)', color: 'var(--primary-navy)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
+                    🏛️ {student.collegeId.name} ({student.collegeId.code})
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
           <button className="cbts-admin-btn-exit" onClick={handleSignOut}>
@@ -2124,6 +2283,94 @@ const StudentDashboard = () => {
                 }}
               >
                 {payProcessing ? 'Processing Payment...' : 'Pay via Razorpay'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Picture Modal */}
+      {profileModalOpen && (
+        <div className="cbts-modal-overlay" style={{ zIndex: 1150 }}>
+          <div className="cbts-modal-card" style={{ maxWidth: '480px', width: '92%', textAlign: 'center', padding: '1.8rem' }}>
+            <h2 className="cbts-modal-title" style={{ fontSize: '1.35rem', marginBottom: '0.4rem', color: 'var(--primary-navy)' }}>
+              📷 Update Student Profile Picture
+            </h2>
+            <p className="cbts-modal-subtitle" style={{ fontSize: '0.88rem', color: 'var(--text-dark-muted)', marginBottom: '1.2rem' }}>
+              Choose a photo from your device. Supported formats: JPG, JPEG, PNG, WEBP (Max 5MB).
+            </p>
+
+            {/* Error & Success Alert Banners */}
+            {profileError && (
+              <div className="cbts-form-alert" role="alert" style={{ marginBottom: '1rem', padding: '0.6rem 0.8rem', fontSize: '0.85rem' }}>
+                <span>{profileError}</span>
+              </div>
+            )}
+
+            {profileMessage && (
+              <div className="cbts-form-alert" role="alert" style={{ marginBottom: '1rem', padding: '0.6rem 0.8rem', fontSize: '0.85rem', borderColor: '#10B981', background: 'rgba(16, 185, 129, 0.08)', color: '#065F46' }}>
+                <span>{profileMessage}</span>
+              </div>
+            )}
+
+            {/* Circular Preview Container */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1rem 0' }}>
+              <div style={{ position: 'relative', width: '130px', height: '130px', borderRadius: '50%', border: '4px solid #3B82F6', boxShadow: '0 6px 20px rgba(59, 130, 246, 0.25)', overflow: 'hidden', background: '#F3F4F6', marginBottom: '1rem' }}>
+                {previewImage ? (
+                  <img src={previewImage} alt="Profile Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : student?.profileImage ? (
+                  <img src={student.profileImage.startsWith('http') ? student.profileImage : `http://localhost:5000${student.profileImage}`} alt="Current Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', fontWeight: 800, color: '#1E3A8A' }}>
+                    {(student?.name || 'S').charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+
+              {/* Hidden File Input */}
+              <input
+                type="file"
+                ref={profileFileInputRef}
+                accept="image/png, image/jpeg, image/jpg, image/webp"
+                onChange={handleProfileFileSelect}
+                style={{ display: 'none' }}
+              />
+
+              <button
+                type="button"
+                className="cbts-btn cbts-btn-secondary"
+                onClick={() => profileFileInputRef.current && profileFileInputRef.current.click()}
+                disabled={uploadingImage}
+                style={{ padding: '0.5rem 1.2rem', fontSize: '0.88rem' }}
+              >
+                📁 Choose Photo
+              </button>
+            </div>
+
+            {/* Modal Action Buttons */}
+            <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+              <button
+                type="button"
+                className="cbts-btn cbts-btn-secondary"
+                onClick={() => {
+                  setProfileModalOpen(false);
+                  setPreviewImage(null);
+                  setProfileError('');
+                  setProfileMessage('');
+                }}
+                disabled={uploadingImage}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                className="cbts-btn cbts-btn-primary"
+                onClick={handleSaveProfileImage}
+                disabled={uploadingImage || !previewImage}
+                style={{ background: '#10B981', borderColor: '#10B981' }}
+              >
+                {uploadingImage ? 'Saving...' : 'Save Profile Picture'}
               </button>
             </div>
           </div>

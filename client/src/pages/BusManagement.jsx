@@ -36,11 +36,15 @@ const BusManagement = () => {
   const [success, setSuccess] = useState('');
 
   // Fetch all buses
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userCollegeId = currentUser.collegeId?._id || currentUser.collegeId;
+
   const fetchBuses = async () => {
     try {
       setLoading(true);
       setGlobalError('');
-      const response = await axios.get('http://localhost:5000/api/bus/all');
+      const params = userCollegeId ? { collegeId: userCollegeId } : {};
+      const response = await axios.get('http://localhost:5000/api/bus/all', { params });
       if (response.data && response.data.buses) {
         setBuses(response.data.buses);
       }
@@ -62,6 +66,7 @@ const BusManagement = () => {
       ...prev,
       [name]: value,
     }));
+    
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -72,30 +77,34 @@ const BusManagement = () => {
     const tempErrors = {};
     let isValid = true;
 
-    if (!formFields.busNumber.trim()) {
+    if (!formFields.busNumber || formFields.busNumber.trim() === '') {
       tempErrors.busNumber = 'Bus Number is required';
       isValid = false;
     }
-    if (!formFields.driverName.trim()) {
+
+    if (!formFields.driverName || formFields.driverName.trim() === '') {
       tempErrors.driverName = 'Driver Name is required';
       isValid = false;
     }
-    if (!formFields.driverPhone.trim()) {
+
+    if (!formFields.driverPhone || formFields.driverPhone.trim() === '') {
       tempErrors.driverPhone = 'Driver Phone is required';
       isValid = false;
     }
-    if (!formFields.route.trim()) {
-      tempErrors.route = 'Route is required';
+
+    if (!formFields.route || formFields.route.trim() === '') {
+      tempErrors.route = 'Route details are required';
       isValid = false;
     }
-    if (!formFields.totalSeats || Number(formFields.totalSeats) <= 0) {
-      tempErrors.totalSeats = 'Total Seats must be a positive number';
+
+    if (!formFields.totalSeats || isNaN(formFields.totalSeats) || Number(formFields.totalSeats) <= 0) {
+      tempErrors.totalSeats = 'Must be greater than 0';
       isValid = false;
     }
 
     if (editingBusId) {
-      if (formFields.availableSeats === undefined || formFields.availableSeats === '' || Number(formFields.availableSeats) < 0) {
-        tempErrors.availableSeats = 'Available Seats must be 0 or positive';
+      if (formFields.availableSeats === '' || isNaN(formFields.availableSeats) || Number(formFields.availableSeats) < 0) {
+        tempErrors.availableSeats = 'Valid number required';
         isValid = false;
       }
       if (Number(formFields.availableSeats) > Number(formFields.totalSeats)) {
@@ -119,6 +128,7 @@ const BusManagement = () => {
         totalSeats: Number(formFields.totalSeats),
         availableSeats: editingBusId ? Number(formFields.availableSeats) : Number(formFields.totalSeats),
         status: formFields.status || 'Active',
+        collegeId: userCollegeId,
       };
 
       try {

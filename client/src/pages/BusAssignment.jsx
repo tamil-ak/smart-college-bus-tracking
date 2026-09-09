@@ -21,19 +21,29 @@ const BusAssignment = () => {
   const [assigningId, setAssigningId] = useState(null);
 
   // Fetch unassigned students and active buses
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userCollegeId = currentUser.collegeId?._id || currentUser.collegeId;
+
   const fetchData = async () => {
     try {
       setLoading(true);
       setError('');
       
+      const params = userCollegeId ? { collegeId: userCollegeId } : {};
+
+      const headers = {
+        'x-user-id': currentUser._id || '',
+        'x-college-id': userCollegeId || '',
+      };
+
       // Fetch approved students without assignments
-      const studentsRes = await axios.get('http://localhost:5000/api/admin/unassigned-students');
+      const studentsRes = await axios.get('http://localhost:5000/api/admin/unassigned-students', { params, headers });
       if (studentsRes.data && studentsRes.data.students) {
         setStudents(studentsRes.data.students);
       }
 
       // Fetch all fleet buses
-      const busesRes = await axios.get('http://localhost:5000/api/bus/all');
+      const busesRes = await axios.get('http://localhost:5000/api/bus/all', { params, headers });
       if (busesRes.data && busesRes.data.buses) {
         // Filter only Active buses
         const activeBuses = busesRes.data.buses.filter(bus => bus.status === 'Active');
@@ -79,10 +89,16 @@ const BusAssignment = () => {
       setError('');
       setSuccess('');
 
-      const response = await axios.post('http://localhost:5000/api/admin/assign-bus', {
-        studentId,
-        busId
-      });
+      const response = await axios.post(
+        'http://localhost:5000/api/admin/assign-bus',
+        { studentId, busId },
+        {
+          headers: {
+            'x-user-id': currentUser._id || '',
+            'x-college-id': userCollegeId || '',
+          },
+        }
+      );
 
       if (response.data && response.data.success) {
         setSuccess(`Bus assigned successfully to student.`);

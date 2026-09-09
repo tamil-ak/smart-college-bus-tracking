@@ -272,6 +272,11 @@ const ParentDashboard = () => {
               </h1>
               <p style={{ margin: '0.35rem 0 0', fontSize: '0.95rem', color: 'var(--text-dark-secondary)' }}>
                 Viewing verified student transport allocation, vehicle details, and bus fee status.
+                {(parentUser?.collegeId?.name || studentData?.collegeId?.name) && (
+                  <span style={{ marginLeft: '10px', background: 'rgba(11, 61, 145, 0.1)', color: 'var(--primary-navy)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
+                    🏛️ {parentUser?.collegeId?.name || studentData?.collegeId?.name}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -334,6 +339,52 @@ const ParentDashboard = () => {
 
               {studentData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Linked Child Profile Avatar Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', paddingBottom: '1rem', borderBottom: '1px dashed #E5E7EB' }}>
+                    {studentData.profileImage ? (
+                      <img
+                        src={studentData.profileImage.startsWith('http') ? studentData.profileImage : `http://localhost:5000${studentData.profileImage}`}
+                        alt={studentData.name || 'Child Profile'}
+                        style={{
+                          width: '68px',
+                          height: '68px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid #3B82F6',
+                          boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                          background: '#ffffff',
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: '68px',
+                          height: '68px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%)',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.6rem',
+                          fontWeight: 800,
+                          border: '3px solid #ffffff',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                        }}
+                      >
+                        {(studentData.name || 'S').charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
+                        {studentData.name}
+                      </h3>
+                      <p style={{ margin: '0.2rem 0 0', fontSize: '0.85rem', color: 'var(--text-dark-muted)', fontWeight: 600 }}>
+                        Reg No: {studentData.registerNumber} • {studentData.department} ({studentData.year} Yr)
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Student Details Grid */}
                   <div className="cbts-student-info-grid">
                     <div className="cbts-info-item">

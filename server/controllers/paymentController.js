@@ -88,8 +88,11 @@ const createOrder = async (req, res) => {
     // 5. Store/update payment record in database with status "Pending" and associate orderId
     let payment = existingPayment;
 
+    const targetCollegeId = student.collegeId || bus.collegeId || fee.collegeId;
+
     if (!payment) {
       payment = new StudentFeePayment({
+        collegeId: targetCollegeId,
         studentId: student._id,
         registerNumber: student.registerNumber || "",
         busId: bus._id,
@@ -103,6 +106,7 @@ const createOrder = async (req, res) => {
         orderId: order.id,
       });
     } else {
+      payment.collegeId = targetCollegeId;
       payment.registerNumber = student.registerNumber || "";
       payment.busNumber = bus.busNumber || "";
       payment.feeId = fee._id;

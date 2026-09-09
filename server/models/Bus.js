@@ -5,8 +5,12 @@ const busSchema = new mongoose.Schema(
     busNumber: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
+    },
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      required: true,
     },
     driverName: {
       type: String,
@@ -49,5 +53,8 @@ const busSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Compound unique index for busNumber per college
+busSchema.index({ collegeId: 1, busNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model("Bus", busSchema);

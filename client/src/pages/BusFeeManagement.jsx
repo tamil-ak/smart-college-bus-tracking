@@ -78,15 +78,20 @@ const BusFeeManagement = () => {
     '2028-2029',
   ];
 
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userCollegeId = currentUser.collegeId?._id || currentUser.collegeId;
+
   // Fetch all fees and active buses dynamically from MongoDB
   const fetchData = async () => {
     try {
       setLoading(true);
       setGlobalError('');
 
+      const params = userCollegeId ? { collegeId: userCollegeId } : {};
+
       const [feeRes, busRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/fee/all'),
-        axios.get('http://localhost:5000/api/bus/all'),
+        axios.get('http://localhost:5000/api/fee/all', { params }),
+        axios.get('http://localhost:5000/api/bus/all', { params }),
       ]);
 
       if (feeRes.data && feeRes.data.fees) {
@@ -108,7 +113,8 @@ const BusFeeManagement = () => {
   const fetchUpiQr = async () => {
     try {
       setQrLoading(true);
-      const res = await axios.get('http://localhost:5000/api/fee/upi-qr');
+      const params = userCollegeId ? { collegeId: userCollegeId } : {};
+      const res = await axios.get('http://localhost:5000/api/fee/upi-qr', { params });
       if (res.data && res.data.success) {
         if (res.data.isConfigured && res.data.upiQr) {
           setUpiQr(res.data.upiQr);
@@ -134,6 +140,9 @@ const BusFeeManagement = () => {
       const params = {
         academicYear: selectedAcademicYear,
       };
+      if (userCollegeId) {
+        params.collegeId = userCollegeId;
+      }
       if (selectedBusFilter !== 'All') {
         params.busId = selectedBusFilter;
       }

@@ -7,6 +7,11 @@ const busFeeSchema = new mongoose.Schema(
       required: [true, "Academic year is required"],
       trim: true,
     },
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      required: [true, "College is required"],
+    },
     busId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Bus",

@@ -6,7 +6,7 @@ import '../styles/landing.css';
 import '../styles/admin.css';
 
 /**
- * Admin Dashboard - Pending Registrations Approval System
+ * Admin Dashboard - Pending Registrations Approval & Multi-College System
  */
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -15,12 +15,29 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Fetch pending student registrations
+  // User and College Context State
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const userCollegeId = currentUser.collegeId?._id || currentUser.collegeId;
+
+  // Guard: Super Admin must use Super Admin Portal
+  useEffect(() => {
+    if (currentUser.role === 'super_admin') {
+      navigate('/super-admin');
+    }
+  }, [currentUser, navigate]);
+
+  // Fetch pending student registrations for this College Admin's college
   const fetchPendingStudents = async () => {
     try {
       setLoading(true);
       setError('');
-      const response = await axios.get('http://localhost:5000/api/admin/pending');
+      const response = await axios.get('http://localhost:5000/api/admin/pending', {
+        params: { collegeId: userCollegeId },
+        headers: {
+          'x-user-id': currentUser._id || '',
+          'x-college-id': userCollegeId || '',
+        },
+      });
       if (response.data && response.data.students) {
         setStudents(response.data.students);
       }
@@ -33,15 +50,26 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchPendingStudents();
-  }, []);
+    if (currentUser.role !== 'super_admin') {
+      fetchPendingStudents();
+    }
+  }, [userCollegeId]);
 
   // Handle student approval
   const handleApprove = async (studentId) => {
     try {
       setError('');
       setSuccess('');
-      const response = await axios.put(`http://localhost:5000/api/admin/approve/${studentId}`);
+      const response = await axios.put(
+        `http://localhost:5000/api/admin/approve/${studentId}`,
+        {},
+        {
+          headers: {
+            'x-user-id': currentUser._id || '',
+            'x-college-id': userCollegeId || '',
+          },
+        }
+      );
 
       if (response.data && response.data.success) {
         setSuccess('Student registration approved successfully.');
@@ -59,7 +87,16 @@ const AdminDashboard = () => {
     try {
       setError('');
       setSuccess('');
-      const response = await axios.put(`http://localhost:5000/api/admin/reject/${studentId}`);
+      const response = await axios.put(
+        `http://localhost:5000/api/admin/reject/${studentId}`,
+        {},
+        {
+          headers: {
+            'x-user-id': currentUser._id || '',
+            'x-college-id': userCollegeId || '',
+          },
+        }
+      );
 
       if (response.data && response.data.success) {
         setSuccess('Student registration rejected successfully.');
@@ -73,12 +110,13 @@ const AdminDashboard = () => {
   };
 
   const handleExit = () => {
-    navigate('/');
+    localStorage.removeItem('user');
+    navigate('/login/admin');
   };
 
   return (
     <div className="cbts-admin-wrapper">
-      {/* Background blobs for visual alignment with registration and landing pages */}
+      {/* Background blobs */}
       <div className="cbts-bg-blobs" aria-hidden="true">
         <div className="cbts-blob cbts-blob-1"></div>
         <div className="cbts-blob cbts-blob-2"></div>
@@ -89,11 +127,16 @@ const AdminDashboard = () => {
         {/* Header Section */}
         <header className="cbts-admin-header">
           <div className="cbts-admin-title-group">
-            <h1 className="cbts-admin-title">Admin Dashboard</h1>
-            <p className="cbts-admin-subtitle">Manage student access approvals and requests.</p>
+            <h1 className="cbts-admin-title">
+              College Admin Dashboard
+            </h1>
+            <p className="cbts-admin-subtitle">
+              Manage student access approvals, bus routes, fleet details, and fee schedules
+              {currentUser.collegeId?.name ? ` for ${currentUser.collegeId.name}` : ''}.
+            </p>
           </div>
-          
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <div className="cbts-admin-stats">
               <span className="cbts-stats-number">{students.length}</span>
               <span className="cbts-stats-label">Pending Reviews</span>
@@ -142,7 +185,7 @@ const AdminDashboard = () => {
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
-              Exit
+              Sign Out
             </button>
           </div>
         </header>
@@ -202,7 +245,14 @@ const AdminDashboard = () => {
                 <tbody>
                   {students.map((student) => (
                     <tr key={student._id}>
-                      <td style={{ fontWeight: 600, color: 'var(--text-dark-primary)' }}>{student.name}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-dark-primary)' }}>
+                        {student.name}
+                        {student.collegeId?.name && (
+                          <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: 500 }}>
+                            🏛️ {student.collegeId.name} ({student.collegeId.code})
+                          </div>
+                        )}
+                      </td>
                       <td>{student.registerNumber}</td>
                       <td>
                         <span className="cbts-dept-badge">
@@ -246,6 +296,7 @@ const AdminDashboard = () => {
         </div>
       </main>
 
+      {/* Super Admin: Create College Modal Overlay */}
       <Footer />
     </div>
   );

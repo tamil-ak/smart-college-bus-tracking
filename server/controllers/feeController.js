@@ -8,6 +8,32 @@ const StudentFeePayment = require("../models/StudentFeePayment");
 const PaymentSettings = require("../models/PaymentSettings");
 
 /**
+ * Helper to resolve authenticated user and target collegeId
+ */
+const getRequestCollegeId = async (req) => {
+  const userId = req.headers["x-user-id"] || (req.body && req.body.userId);
+  if (userId) {
+    const user = await User.findById(userId);
+    if (user && user.role !== "super_admin" && user.collegeId) {
+      return user.collegeId.toString();
+    }
+  }
+  const headerCol = req.headers["x-college-id"];
+  if (headerCol && headerCol !== "ALL" && headerCol !== "null" && headerCol !== "undefined") {
+    return headerCol;
+  }
+  const queryCol = req.query ? req.query.collegeId : null;
+  if (queryCol && queryCol !== "ALL" && queryCol !== "null" && queryCol !== "undefined") {
+    return queryCol;
+  }
+  const bodyCol = req.body ? req.body.collegeId : null;
+  if (bodyCol && bodyCol !== "ALL" && bodyCol !== "null" && bodyCol !== "undefined") {
+    return bodyCol;
+  }
+  return null;
+};
+
+/**
  * Helper to ensure QR image URL is absolute for client consumption
  */
 const formatQrImageUrl = (img) => {
@@ -24,7 +50,7 @@ const formatQrImageUrl = (img) => {
  */
 const createBusFee = async (req, res) => {
   try {
-    const { academicYear, busId, amount, dueDate, status } = req.body;
+    const { academicYear, busId, amount, dueDate, status, collegeId } = req.body;
 
     if (!academicYear || !busId || amount === undefined || amount === null || !dueDate) {
       return res.status(400).json({
@@ -56,12 +82,14 @@ const createBusFee = async (req, res) => {
       });
     }
 
+    const targetCollegeId = await getRequestCollegeId(req) || collegeId || busExists.collegeId;
     const feeStatus = status === "Inactive" ? "Inactive" : "Active";
 
     if (feeStatus === "Active") {
       const duplicateFee = await BusFee.findOne({
         academicYear: academicYear.trim(),
         busId: busId,
+        collegeId: targetCollegeId,
         status: "Active",
       });
 
@@ -76,16 +104,16 @@ const createBusFee = async (req, res) => {
     const newFee = await BusFee.create({
       academicYear: academicYear.trim(),
       busId,
+      collegeId: targetCollegeId,
       amount: numericAmount,
       dueDate: new Date(dueDate),
       applicableYears: ["1st Year", "2nd Year", "3rd Year", "4th Year"],
       status: feeStatus,
     });
 
-    const populatedFee = await BusFee.findById(newFee._id).populate(
-      "busId",
-      "busNumber route driverName driverPhone totalSeats availableSeats status"
-    );
+    const populatedFee = await BusFee.findById(newFee._id)
+      .populate("busId", "busNumber route driverName driverPhone totalSeats availableSeats status")
+      .populate("collegeId", "name code");
 
     return res.status(201).json({
       success: true,
@@ -106,8 +134,15 @@ const createBusFee = async (req, res) => {
  */
 const getAllBusFees = async (req, res) => {
   try {
-    const fees = await BusFee.find()
+    const targetCollegeId = await getRequestCollegeId(req);
+    const query = {};
+    if (targetCollegeId) {
+      query.collegeId = targetCollegeId;
+    }
+
+    const fees = await BusFee.find(query)
       .populate("busId", "busNumber route driverName driverPhone totalSeats availableSeats status")
+      .populate("collegeId", "name code")
       .sort({ createdAt: -1 });
 
     return res.status(200).json({
@@ -349,7 +384,18 @@ const toggleFeeStatus = async (req, res) => {
  */
 const getActiveUpiQr = async (req, res) => {
   try {
-    const activeSetting = await PaymentSettings.findOne({ isActive: true }).sort({ updatedAt: -1 });
+    const { collegeId } = req.query;
+    let query = { isActive: true };
+
+    if (collegeId && collegeId !== "ALL" && collegeId !== "null" && collegeId !== "undefined") {
+      query.collegeId = collegeId;
+    }
+
+    let activeSetting = await PaymentSettings.findOne(query).sort({ updatedAt: -1 });
+
+    if (!activeSetting) {
+      activeSetting = await PaymentSettings.findOne({ isActive: true }).sort({ updatedAt: -1 });
+    }
 
     if (!activeSetting || !activeSetting.upiQrImage) {
       return res.status(200).json({
@@ -384,13 +430,19 @@ const getActiveUpiQr = async (req, res) => {
  */
 const saveUpiQr = async (req, res) => {
   try {
-    const { upiQrImage, upiId, upiName } = req.body;
+    const { upiQrImage, upiId, upiName, collegeId } = req.body;
 
     if (!upiQrImage || typeof upiQrImage !== "string" || !upiQrImage.trim()) {
       return res.status(400).json({
         success: false,
         message: "A valid QR image is required.",
       });
+    }
+
+    let targetCollegeId = collegeId;
+    if (!targetCollegeId) {
+      const defaultCol = await College.findOne({ code: "MAIN" });
+      if (defaultCol) targetCollegeId = defaultCol._id;
     }
 
     let finalQrImage = upiQrImage.trim();
@@ -419,11 +471,12 @@ const saveUpiQr = async (req, res) => {
       }
     }
 
-    // Deactivate previous active records
-    await PaymentSettings.updateMany({}, { isActive: false });
+    // Deactivate previous active records for this college
+    await PaymentSettings.updateMany({ collegeId: targetCollegeId }, { isActive: false });
 
     // Create new active setting with actual UPI ID entered by admin
     const newSetting = await PaymentSettings.create({
+      collegeId: targetCollegeId,
       upiQrImage: finalQrImage,
       upiId: upiId ? upiId.trim() : "",
       upiName: upiName ? upiName.trim() : "College Bus Transport Fee",
@@ -682,8 +735,11 @@ const submitStudentPayment = async (req, res) => {
 
     const currentTimestamp = new Date();
 
+    const targetCollegeId = student.collegeId || bus.collegeId || busFee.collegeId;
+
     if (!payment) {
       payment = new StudentFeePayment({
+        collegeId: targetCollegeId,
         studentId: student._id,
         registerNumber: student.registerNumber || "",
         busId: bus._id,
@@ -698,6 +754,7 @@ const submitStudentPayment = async (req, res) => {
         paymentMethod: "UPI",
       });
     } else {
+      payment.collegeId = targetCollegeId;
       payment.registerNumber = student.registerNumber || "";
       payment.busNumber = bus.busNumber || "";
       payment.feeId = busFee._id;
@@ -730,12 +787,16 @@ const submitStudentPayment = async (req, res) => {
  */
 const getStudentPaymentsAdmin = async (req, res) => {
   try {
-    const { academicYear = "2026-2027", busId, status } = req.query;
+    const { academicYear = "2026-2027", busId, status, collegeId } = req.query;
 
     const studentQuery = {
       role: "student",
       busId: { $ne: null },
     };
+
+    if (collegeId && collegeId !== "ALL" && collegeId !== "null" && collegeId !== "undefined") {
+      studentQuery.collegeId = new mongoose.Types.ObjectId(collegeId);
+    }
 
     if (busId && busId !== "All" && mongoose.Types.ObjectId.isValid(busId)) {
       studentQuery.busId = new mongoose.Types.ObjectId(busId);

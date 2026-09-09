@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const paymentSettingsSchema = new mongoose.Schema(
   {
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      required: [true, "College is required"],
+    },
     upiQrImage: {
       type: String,
       required: [true, "UPI QR Image is required"],

@@ -2,6 +2,11 @@ const mongoose = require("mongoose");
 
 const studentFeePaymentSchema = new mongoose.Schema(
   {
+    collegeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "College",
+      required: [true, "College is required"],
+    },
     studentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -84,9 +89,9 @@ const studentFeePaymentSchema = new mongoose.Schema(
   }
 );
 
-// Compound index to prevent duplicate records for same student + bus + academic year
+// Compound index to prevent duplicate records for same college + student + bus + academic year
 studentFeePaymentSchema.index(
-  { studentId: 1, busId: 1, academicYear: 1 },
+  { collegeId: 1, studentId: 1, busId: 1, academicYear: 1 },
   { unique: true }
 );
 

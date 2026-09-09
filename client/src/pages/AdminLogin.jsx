@@ -80,20 +80,37 @@ const AdminLogin = () => {
         const response = await axios.post("http://localhost:5000/api/auth/login/student", loginData);
         console.log("Admin login response:", response);
 
-        // Ensure user has admin role
-        if (response.data?.user?.role !== "admin") {
+        const user = response.data?.user;
+        const role = user?.role;
+
+        if (!["admin", "college_admin", "super_admin"].includes(role)) {
           setGlobalError("Access Denied: Only administrators can access this portal.");
+          return;
+        }
+
+        const status = (user?.status || '').toLowerCase();
+        if (role !== "super_admin" && status === "pending") {
+          setGlobalError("Your College Admin registration request is pending Super Admin approval.");
+          return;
+        }
+
+        if (role !== "super_admin" && status === "rejected") {
+          setGlobalError("Your College Admin registration request was rejected by Super Admin.");
           return;
         }
 
         setSuccessMessage(response.data?.message || 'Login successful');
         setShowSuccess(true);
         
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+        localStorage.setItem('user', JSON.stringify(user));
         setTimeout(() => {
           setShowSuccess(false);
-          navigate('/admin'); // Redirect to Admin Dashboard
-        }, 2000);
+          if (role === "super_admin") {
+            navigate('/super-admin');
+          } else {
+            navigate('/admin');
+          }
+        }, 1800);
       } catch (err) {
         console.error("Axios admin login error:", err);
         if (err.response) {
@@ -180,6 +197,17 @@ const AdminLogin = () => {
               </button>
               <button type="button" className="cbts-btn cbts-btn-secondary" onClick={handleBack}>
                 Back
+              </button>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-dark-secondary)' }}>
+              New College Administrator?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/register/admin')}
+                style={{ background: 'none', border: 'none', color: 'var(--primary-navy)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+              >
+                Request College Admin Access
               </button>
             </div>
           </form>

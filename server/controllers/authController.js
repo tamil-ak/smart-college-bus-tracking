@@ -1,5 +1,8 @@
 const User = require("../models/User");
+const College = require("../models/College");
 const bcrypt = require("bcryptjs");
+const fs = require("fs");
+const path = require("path");
 
 const registerStudent = async (req, res) => {
   try {
@@ -12,12 +15,23 @@ const registerStudent = async (req, res) => {
       email,
       phone,
       password,
+      collegeId,
     } = req.body;
 
+    let targetCollegeId = collegeId;
+    if (!targetCollegeId) {
+      const defaultCol = await College.findOne({ code: "MAIN" });
+      if (defaultCol) targetCollegeId = defaultCol._id;
+    }
+
     // Check existing user
-    const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase().trim() }, { registerNumber: registerNumber.trim() }],
-    });
+    const existingQuery = {
+      $or: [
+        { email: email.toLowerCase().trim() },
+        { registerNumber: registerNumber.trim(), collegeId: targetCollegeId }
+      ]
+    };
+    const existingUser = await User.findOne(existingQuery);
 
     if (existingUser) {
       return res.status(400).json({
@@ -40,6 +54,7 @@ const registerStudent = async (req, res) => {
       password: hashedPassword,
       role: "student",
       status: "Pending",
+      collegeId: targetCollegeId,
     });
 
     res.status(201).json({
@@ -60,7 +75,7 @@ const registerStudent = async (req, res) => {
  */
 const registerParent = async (req, res) => {
   try {
-    const { name, email, phone, password, childRegisterNumber } = req.body;
+    const { name, email, phone, password, childRegisterNumber, collegeId } = req.body;
 
     if (!name || !email || !phone || !password || !childRegisterNumber) {
       return res.status(400).json({
@@ -81,13 +96,17 @@ const registerParent = async (req, res) => {
       });
     }
 
-    // Find the existing student in MongoDB using the register number
-    const existingStudent = await User.findOne({
+    // Find student
+    const studentQuery = {
       role: "student",
       registerNumber: { $regex: new RegExp(`^${cleanChildRegNo}$`, "i") },
-    }).populate("busId");
+    };
+    if (collegeId) {
+      studentQuery.collegeId = collegeId;
+    }
 
-    // If student does not exist, reject with exact required error message
+    const existingStudent = await User.findOne(studentQuery).populate("busId").populate("collegeId");
+
     if (!existingStudent) {
       return res.status(404).json({
         success: false,
@@ -108,12 +127,15 @@ const registerParent = async (req, res) => {
       status: "Approved",
       studentId: existingStudent._id,
       childRegisterNumber: existingStudent.registerNumber,
+      collegeId: existingStudent.collegeId ? existingStudent.collegeId._id || existingStudent.collegeId : collegeId,
     });
 
-    const populatedParent = await User.findById(parentUser._id).populate({
-      path: "studentId",
-      populate: { path: "busId" },
-    });
+    const populatedParent = await User.findById(parentUser._id)
+      .populate("collegeId")
+      .populate({
+        path: "studentId",
+        populate: { path: "busId" },
+      });
 
     return res.status(201).json({
       success: true,
@@ -125,6 +147,65 @@ const registerParent = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || "Failed to register parent account.",
+    });
+  }
+};
+
+/**
+ * Register College Admin & Submit for Super Admin Approval
+ */
+const registerCollegeAdmin = async (req, res) => {
+  try {
+    const { name, email, password, phone, collegeId } = req.body;
+
+    if (!name || !email || !password || !collegeId) {
+      return res.status(400).json({
+        success: false,
+        message: "Name, Email, Password, and College selection are required.",
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: "An account with this email already exists.",
+      });
+    }
+
+    const college = await College.findById(collegeId);
+    if (!college) {
+      return res.status(404).json({
+        success: false,
+        message: "Selected college not found.",
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const adminUser = await User.create({
+      name: name.trim(),
+      email: cleanEmail,
+      phone: phone ? phone.trim() : college.phone,
+      password: hashedPassword,
+      role: "college_admin",
+      collegeId: college._id,
+      status: "pending",
+      registerNumber: `ADMIN-${college.code}-${Date.now().toString().slice(-4)}`,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "College Admin registration submitted successfully. Waiting for Super Admin approval.",
+      user: adminUser,
+    });
+  } catch (error) {
+    console.error("Error registering college admin:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to submit admin registration.",
     });
   }
 };
@@ -148,10 +229,13 @@ const loginStudent = async (req, res) => {
         { registerNumber: cleanIdentifier },
         { phone: cleanIdentifier }
       ]
-    }).populate({
-      path: "studentId",
-      populate: { path: "busId" }
-    }).populate("busId");
+    })
+      .populate("collegeId")
+      .populate({
+        path: "studentId",
+        populate: { path: "busId" }
+      })
+      .populate("busId");
 
     if (!user) {
       return res.status(400).json({
@@ -159,7 +243,7 @@ const loginStudent = async (req, res) => {
       });
     }
 
-    // Compare the password using bcrypt.compare()
+    // Compare password using bcrypt
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({
@@ -171,8 +255,41 @@ const loginStudent = async (req, res) => {
     const isDeviceRegistered = Boolean(user.registeredDeviceId);
     const deviceStatus = isDeviceRegistered ? "Registered" : "Device not registered";
 
-    // If role === "admin" or "parent", return success immediately without pending status check
-    if (user.role === "admin" || user.role === "parent") {
+    // Super Admin login check
+    if (user.role === "super_admin") {
+      return res.status(200).json({
+        success: true,
+        message: "Super Admin login successful",
+        deviceStatus,
+        isDeviceRegistered,
+        user,
+      });
+    }
+
+    // College Admin login check
+    if (["admin", "college_admin"].includes(user.role)) {
+      if (["pending", "Pending"].includes(user.status)) {
+        return res.status(400).json({
+          message: "Your College Admin registration is pending Super Admin approval.",
+        });
+      }
+      if (["rejected", "Rejected"].includes(user.status)) {
+        return res.status(400).json({
+          message: "Your College Admin registration request was rejected by Super Admin.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "College Admin login successful",
+        deviceStatus,
+        isDeviceRegistered,
+        user,
+      });
+    }
+
+    // Parent login check
+    if (user.role === "parent") {
       return res.status(200).json({
         success: true,
         message: "Login successful",
@@ -577,9 +694,269 @@ const verifyAiFace = async (req, res) => {
   }
 };
 
+/**
+ * Upload & Save Student Profile Image
+ */
+const uploadProfileImage = async (req, res) => {
+  try {
+    const { userId, studentId, id, image } = req.body;
+    const targetUserId = userId || studentId || id;
+
+    if (!targetUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    if (!image || typeof image !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Profile image data is required.",
+      });
+    }
+
+    // Context user check to prevent arbitrary user updates
+    const callerId = req.headers["x-user-id"];
+    if (callerId && callerId !== targetUserId.toString()) {
+      const callerUser = await User.findById(callerId);
+      if (!callerUser || !["super_admin", "college_admin", "admin"].includes(callerUser.role)) {
+        return res.status(403).json({
+          success: false,
+          message: "Forbidden: You cannot update another user's profile image.",
+        });
+      }
+    }
+
+    const user = await User.findById(targetUserId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    // Protect Super Admin account from being updated by any other caller
+    if (user.role === "super_admin" && callerId !== user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Super Admin profile can only be modified by the Super Admin.",
+      });
+    }
+
+    // Validate MIME type & size
+    const matches = image.match(/^data:image\/(png|jpeg|jpg|webp);base64,/i);
+    if (!matches) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid image format. Allowed formats are JPG, JPEG, PNG, and WEBP.",
+      });
+    }
+
+    const ext = matches[1].toLowerCase() === "jpeg" ? "jpg" : matches[1].toLowerCase();
+    const base64Data = image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/i, "");
+    const buffer = Buffer.from(base64Data, "base64");
+
+    // Max file size check: 5MB (5 * 1024 * 1024 bytes)
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        message: "File size exceeds 5MB limit. Please select a smaller photo.",
+      });
+    }
+
+    // Ensure uploads/profiles directory exists
+    const profilesDir = path.join(__dirname, "../uploads/profiles");
+    if (!fs.existsSync(profilesDir)) {
+      fs.mkdirSync(profilesDir, { recursive: true });
+    }
+
+    // Remove old profile picture file if present
+    if (user.profileImage && user.profileImage.startsWith("/uploads/profiles/")) {
+      const oldPath = path.join(__dirname, "..", user.profileImage);
+      if (fs.existsSync(oldPath)) {
+        try {
+          fs.unlinkSync(oldPath);
+        } catch (e) {
+          console.warn("Failed to remove old profile picture:", e.message);
+        }
+      }
+    }
+
+    const filename = `profile_${user._id}_${Date.now()}.${ext}`;
+    const filePath = path.join(profilesDir, filename);
+    fs.writeFileSync(filePath, buffer);
+
+    const relativePath = `/uploads/profiles/${filename}`;
+    user.profileImage = relativePath;
+    await user.save();
+
+    const populatedUser = await User.findById(user._id).populate("collegeId busId");
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile picture updated successfully.",
+      user: populatedUser,
+      profileImage: relativePath,
+    });
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to upload profile picture.",
+    });
+  }
+};
+
+/**
+ * Get Super Admin Profile
+ */
+const getSuperAdminProfile = async (req, res) => {
+  try {
+    const callerId = req.headers["x-user-id"] || req.query.userId || req.query.id;
+    if (!callerId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    const user = await User.findById(callerId).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
+    }
+
+    if (user.role !== "super_admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Access restricted to Super Admin.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Error fetching Super Admin profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to fetch Super Admin profile.",
+    });
+  }
+};
+
+/**
+ * Update Super Admin Profile (Name, Phone, and/or Profile Image)
+ */
+const updateSuperAdminProfile = async (req, res) => {
+  try {
+    const callerId = req.headers["x-user-id"] || req.body.userId;
+    if (!callerId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required.",
+      });
+    }
+
+    const user = await User.findById(callerId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Super Admin account not found.",
+      });
+    }
+
+    if (user.role !== "super_admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Forbidden: Only the authenticated Super Admin can update this profile.",
+      });
+    }
+
+    const { name, phone, image } = req.body;
+
+    if (name && typeof name === "string" && name.trim()) {
+      user.name = name.trim();
+    }
+
+    if (phone && typeof phone === "string" && phone.trim()) {
+      user.phone = phone.trim();
+    }
+
+    // Process image upload if provided
+    if (image && typeof image === "string") {
+      const matches = image.match(/^data:image\/(png|jpeg|jpg|webp);base64,/i);
+      if (!matches) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid image format. Allowed formats are JPG, JPEG, PNG, and WEBP.",
+        });
+      }
+
+      const ext = matches[1].toLowerCase() === "jpeg" ? "jpg" : matches[1].toLowerCase();
+      const base64Data = image.replace(/^data:image\/(png|jpeg|jpg|webp);base64,/i, "");
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // Max file size: 5MB
+      if (buffer.length > 5 * 1024 * 1024) {
+        return res.status(400).json({
+          success: false,
+          message: "File size exceeds 5MB limit. Please select a smaller photo.",
+        });
+      }
+
+      // Ensure uploads/profiles directory exists
+      const profilesDir = path.join(__dirname, "../uploads/profiles");
+      if (!fs.existsSync(profilesDir)) {
+        fs.mkdirSync(profilesDir, { recursive: true });
+      }
+
+      // Remove old profile picture file if present
+      if (user.profileImage && user.profileImage.startsWith("/uploads/profiles/")) {
+        const oldPath = path.join(__dirname, "..", user.profileImage);
+        if (fs.existsSync(oldPath)) {
+          try {
+            fs.unlinkSync(oldPath);
+          } catch (e) {
+            console.warn("Failed to remove old profile picture:", e.message);
+          }
+        }
+      }
+
+      const filename = `superadmin_${user._id}_${Date.now()}.${ext}`;
+      const filePath = path.join(profilesDir, filename);
+      fs.writeFileSync(filePath, buffer);
+
+      user.profileImage = `/uploads/profiles/${filename}`;
+    }
+
+    await user.save();
+
+    const updatedUser = await User.findById(user._id).select("-password");
+
+    return res.status(200).json({
+      success: true,
+      message: "Super Admin profile updated successfully.",
+      user: updatedUser,
+      profileImage: updatedUser.profileImage,
+    });
+  } catch (error) {
+    console.error("Error updating Super Admin profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update Super Admin profile.",
+    });
+  }
+};
+
 module.exports = {
   registerStudent,
   registerParent,
+  registerCollegeAdmin,
   loginStudent,
   getStudentProfile,
   getParentStudentProfile,
@@ -588,4 +965,7 @@ module.exports = {
   registerAiFace,
   verifyFace,
   verifyAiFace,
+  uploadProfileImage,
+  getSuperAdminProfile,
+  updateSuperAdminProfile,
 };
