@@ -179,6 +179,18 @@ const AdminDashboard = () => {
               </svg>
               Bus Fees
             </button>
+
+            <button 
+              className="cbts-admin-btn-exit" 
+              onClick={() => navigate('/admin/track-bus')}
+              style={{ background: '#10B981', color: '#ffffff', borderColor: '#10B981' }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                <circle cx="12" cy="12" r="10" />
+                <polygon points="12 8 8 12 12 16 16 12 12 8" />
+              </svg>
+              Track Buses
+            </button>
             
             <button className="cbts-admin-btn-exit" onClick={handleExit}>
               <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">

@@ -4,6 +4,7 @@ import axios from 'axios';
 import jsQR from 'jsqr';
 import { detectAndExtractAiFaceDescriptor, getHumanInstance } from '../services/humanFaceService';
 import Footer from '../components/Footer';
+import LiveBusMap from '../components/LiveBusMap';
 import '../styles/landing.css';
 import '../styles/admin.css';
 
@@ -18,6 +19,9 @@ const StudentDashboard = () => {
   const [deviceRegistering, setDeviceRegistering] = useState(false);
   const [deviceMessage, setDeviceMessage] = useState('');
   const [deviceError, setDeviceError] = useState('');
+
+  // Live Bus Tracking Modal State
+  const [showLiveTrackingModal, setShowLiveTrackingModal] = useState(false);
 
   // Face Registration State
   const [faceModalOpen, setFaceModalOpen] = useState(false);
@@ -1236,6 +1240,130 @@ const StudentDashboard = () => {
         ) : (
           <div className="cbts-student-cards-stack">
             
+            {/* 🚌 TOP PROMINENT LIVE BUS TRACKING CARD */}
+            <div
+              className="cbts-student-card"
+              style={{
+                background: 'linear-gradient(135deg, #0B3D91 0%, #1E3A8A 50%, #0F172A 100%)',
+                borderRadius: '18px',
+                padding: '1.4rem 1.8rem',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1.2rem',
+                boxShadow: '0 8px 24px rgba(11, 61, 145, 0.25)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }}
+                >
+                  🚌
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                      Live Bus Tracking
+                    </h3>
+                    {student?.busId && typeof student.busId === 'object' ? (
+                      <span
+                        style={{
+                          background: '#10B981',
+                          color: '#ffffff',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          padding: '3px 10px',
+                          borderRadius: '50px',
+                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                        }}
+                      >
+                        Bus {student.busId.busNumber}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.25)',
+                          color: '#FECACA',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '50px',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                        }}
+                      >
+                        Not Allocated
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.82)' }}>
+                    {student?.busId && typeof student.busId === 'object'
+                      ? `Route: ${student.busId.route || 'Campus Route'} • View real-time location on live map`
+                      : 'You do not have a bus allocated yet. Please check back later.'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {student?.busId && typeof student.busId === 'object' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowLiveTrackingModal(true)}
+                    style={{
+                      padding: '0.8rem 1.6rem',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                      color: '#78350F',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>🛰️</span>
+                    <span>Track My Bus</span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '0.65rem 1.2rem',
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.12)',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      border: '1px dashed rgba(255, 255, 255, 0.3)',
+                    }}
+                  >
+                    <span>🚫</span> Bus Not Assigned
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Bus Attendance Section */}
             <div className="cbts-student-card">
               <div className="cbts-device-security-header">
@@ -1833,7 +1961,7 @@ const StudentDashboard = () => {
                       <line x1="6" y1="12" x2="18" y2="12" />
                     </svg>
                   </div>
-                  <h3 className="cbts-empty-title" style={{ fontSize: '1.15rem', marginTop: '0.75rem' }}>No Bus Assigned Yet</h3>
+                  <h3 className="cbts-empty-title" style={{ fontSize: '1.15rem', marginTop: '0.75rem' }}>Bus Not Assigned</h3>
                   <p className="cbts-empty-subtitle" style={{ fontSize: '0.85rem' }}>The transport administrator has not allocated a bus to your route yet. Please check back later.</p>
                 </div>
               ) : (
@@ -1877,6 +2005,33 @@ const StudentDashboard = () => {
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-dark-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Available Seats</span>
                       <p style={{ fontSize: '1.35rem', fontWeight: 700, margin: '0.15rem 0 0', color: '#10B981' }}>{student.busId.availableSeats ?? 0}</p>
                     </div>
+                  </div>
+
+                  {/* Live Tracking Action Button for Assigned Bus */}
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      className="cbts-btn cbts-btn-primary"
+                      onClick={() => setShowLiveTrackingModal(true)}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        background: 'linear-gradient(135deg, #0B3D91 0%, #1E3A8A 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        border: 'none',
+                        borderRadius: '10px',
+                        boxShadow: '0 4px 12px rgba(11, 61, 145, 0.25)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span>🛰️</span>
+                      <span>Track My Bus</span>
+                    </button>
                   </div>
 
                 </div>
@@ -2373,6 +2528,21 @@ const StudentDashboard = () => {
                 {uploadingImage ? 'Saving...' : 'Save Profile Picture'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Live Bus Tracking Modal (Assigned Bus Only) */}
+      {showLiveTrackingModal && student?.busId && (
+        <div className="cbts-modal-overlay" style={{ zIndex: 1200 }}>
+          <div className="cbts-modal-card" style={{ maxWidth: '1020px', width: '96%', padding: '1.2rem', textAlign: 'left' }}>
+            <LiveBusMap
+              busId={typeof student.busId === 'object' ? student.busId._id : student.busId}
+              initialBusNumber={student.busId?.busNumber || ''}
+              showControls={false}
+              height="560px"
+              onClose={() => setShowLiveTrackingModal(false)}
+            />
           </div>
         </div>
       )}

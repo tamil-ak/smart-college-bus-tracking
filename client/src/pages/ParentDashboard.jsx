@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Logo from '../components/Logo';
 import Footer from '../components/Footer';
+import LiveBusMap from '../components/LiveBusMap';
 import '../styles/landing.css';
 import '../styles/admin.css';
 
@@ -28,6 +29,9 @@ const ParentDashboard = () => {
   const [paySubmitting, setPaySubmitting] = useState(false);
   const [payModalError, setPayModalError] = useState('');
   const [paySuccessMessage, setPaySuccessMessage] = useState('');
+
+  // Live Bus Tracking Modal State
+  const [showLiveTrackingModal, setShowLiveTrackingModal] = useState(false);
 
   // Format currency (INR)
   const formatCurrency = (val) => {
@@ -310,6 +314,130 @@ const ParentDashboard = () => {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            {/* 🚌 TOP PROMINENT LIVE BUS TRACKING CARD (LINKED CHILD) */}
+            <div
+              className="cbts-student-card"
+              style={{
+                background: 'linear-gradient(135deg, #0B3D91 0%, #1E3A8A 50%, #0F172A 100%)',
+                borderRadius: '18px',
+                padding: '1.4rem 1.8rem',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1.2rem',
+                boxShadow: '0 8px 24px rgba(11, 61, 145, 0.25)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+                <div
+                  style={{
+                    width: '56px',
+                    height: '56px',
+                    borderRadius: '14px',
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                  }}
+                >
+                  🚌
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ffffff' }}>
+                      Live Bus Tracking
+                    </h3>
+                    {studentData?.busId && typeof studentData.busId === 'object' ? (
+                      <span
+                        style={{
+                          background: '#10B981',
+                          color: '#ffffff',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          padding: '3px 10px',
+                          borderRadius: '50px',
+                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)',
+                        }}
+                      >
+                        Bus {studentData.busId.busNumber}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.25)',
+                          color: '#FECACA',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '50px',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                        }}
+                      >
+                        Not Allocated
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.88rem', color: 'rgba(255, 255, 255, 0.82)' }}>
+                    {studentData?.busId && typeof studentData.busId === 'object'
+                      ? `Student: ${studentData.name} • Route: ${studentData.busId.route || 'Campus Route'} • View real-time location`
+                      : 'Your child has not been allocated a bus yet by the college transport department.'}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                {studentData?.busId && typeof studentData.busId === 'object' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowLiveTrackingModal(true)}
+                    style={{
+                      padding: '0.8rem 1.6rem',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+                      color: '#78350F',
+                      fontWeight: 800,
+                      fontSize: '1rem',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                      transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+                  >
+                    <span style={{ fontSize: '1.2rem' }}>🛰️</span>
+                    <span>Track Child's Bus</span>
+                  </button>
+                ) : (
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '0.65rem 1.2rem',
+                      borderRadius: '10px',
+                      background: 'rgba(255, 255, 255, 0.12)',
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      border: '1px dashed rgba(255, 255, 255, 0.3)',
+                    }}
+                  >
+                    <span>🚫</span> Bus Not Assigned
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* 1. LINKED STUDENT PROFILE CARD */}
             <div className="cbts-student-card" style={{ background: '#ffffff', border: '1.5px solid rgba(11, 61, 145, 0.15)', borderRadius: '22px', padding: '2rem', boxShadow: '0 8px 30px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '1rem' }}>
@@ -453,39 +581,72 @@ const ParentDashboard = () => {
                     </div>
 
                     {studentData.busId ? (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.88rem' }}>
-                        <div>
-                          <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Bus</span>
-                          <p style={{ margin: '0.15rem 0 0', fontWeight: 800, fontSize: '1.15rem', color: 'var(--primary-navy)' }}>
-                            Bus {studentData.busId.busNumber}
-                          </p>
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.88rem' }}>
+                          <div>
+                            <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Bus</span>
+                            <p style={{ margin: '0.15rem 0 0', fontWeight: 800, fontSize: '1.15rem', color: 'var(--primary-navy)' }}>
+                              Bus {studentData.busId.busNumber}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Route Details</span>
+                            <p style={{ margin: '0.15rem 0 0', fontWeight: 600, color: 'var(--text-dark-primary)' }}>
+                              {studentData.busId.route || 'Campus Route'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Driver</span>
+                            <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
+                              {studentData.busId.driverName || 'Driver Assigned'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Driver Contact</span>
+                            <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--primary-navy)' }}>
+                              📞 {studentData.busId.driverPhone || 'Contact College Transport'}
+                            </p>
+                          </div>
                         </div>
 
-                        <div>
-                          <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Route Details</span>
-                          <p style={{ margin: '0.15rem 0 0', fontWeight: 600, color: 'var(--text-dark-primary)' }}>
-                            {studentData.busId.route || 'Campus Route'}
-                          </p>
+                        {/* Live Bus Tracking Action Button */}
+                        <div style={{ marginTop: '1.2rem', borderTop: '1px solid #E2E8F0', paddingTop: '1rem' }}>
+                          <button
+                            type="button"
+                            className="cbts-btn cbts-btn-primary"
+                            onClick={() => setShowLiveTrackingModal(true)}
+                            style={{
+                              width: '100%',
+                              padding: '0.75rem',
+                              background: 'linear-gradient(135deg, #0B3D91 0%, #1E3A8A 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '8px',
+                              fontSize: '0.95rem',
+                              fontWeight: 700,
+                              border: 'none',
+                              borderRadius: '10px',
+                              boxShadow: '0 4px 12px rgba(11, 61, 145, 0.2)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span>🛰️</span>
+                            <span>Track Child's Bus</span>
+                          </button>
                         </div>
-
-                        <div>
-                          <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Assigned Driver</span>
-                          <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--text-dark-primary)' }}>
-                            {studentData.busId.driverName || 'Driver Assigned'}
-                          </p>
-                        </div>
-
-                        <div>
-                          <span style={{ color: 'var(--text-dark-muted)', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase' }}>Driver Contact</span>
-                          <p style={{ margin: '0.15rem 0 0', fontWeight: 700, color: 'var(--primary-navy)' }}>
-                            📞 {studentData.busId.driverPhone || 'Contact College Transport'}
-                          </p>
-                        </div>
-                      </div>
+                      </>
                     ) : (
-                      <p style={{ margin: 0, color: 'var(--text-dark-secondary)', fontSize: '0.88rem' }}>
-                        Your child has not been allocated a bus yet by the college transport department.
-                      </p>
+                      <div style={{ padding: '1.4rem', textAlign: 'center', background: '#F8FAFC', borderRadius: '12px', border: '1px dashed #CBD5E1' }}>
+                        <span style={{ fontSize: '1.6rem', display: 'block', marginBottom: '0.35rem' }}>🚌</span>
+                        <h4 style={{ margin: '0 0 0.25rem', color: 'var(--text-dark-primary)', fontWeight: 700, fontSize: '1rem' }}>Bus Not Assigned</h4>
+                        <p style={{ margin: 0, color: 'var(--text-dark-muted)', fontSize: '0.85rem' }}>
+                          Your child has not been allocated a bus yet by the college transport department.
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -920,6 +1081,21 @@ const ParentDashboard = () => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Live Bus Tracking Modal (Linked Child's Bus Only) */}
+      {showLiveTrackingModal && studentData?.busId && (
+        <div className="cbts-modal-overlay" style={{ zIndex: 1200 }}>
+          <div className="cbts-modal-card" style={{ maxWidth: '1020px', width: '96%', padding: '1.2rem', textAlign: 'left' }}>
+            <LiveBusMap
+              busId={typeof studentData.busId === 'object' ? studentData.busId._id : studentData.busId}
+              initialBusNumber={studentData.busId?.busNumber || ''}
+              showControls={false}
+              height="560px"
+              onClose={() => setShowLiveTrackingModal(false)}
+            />
           </div>
         </div>
       )}

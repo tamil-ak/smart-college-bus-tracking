@@ -12,6 +12,7 @@ import AdminRegister from './pages/AdminRegister';
 import BusManagement from './pages/BusManagement';
 import BusAssignment from './pages/BusAssignment';
 import BusFeeManagement from './pages/BusFeeManagement';
+import AdminBusTracking from './pages/AdminBusTracking';
 import StudentDashboard from './pages/StudentDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 import './App.css';
@@ -37,6 +38,8 @@ function App() {
         <Route path="/admin/bus-assignment" element={<BusAssignment />} />
         <Route path="/admin/bus-fees" element={<BusFeeManagement />} />
         <Route path="/admin/fee-management" element={<BusFeeManagement />} />
+        <Route path="/admin/track-bus" element={<AdminBusTracking />} />
+        <Route path="/admin/tracking" element={<AdminBusTracking />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
         <Route path="/parent-dashboard" element={<ParentDashboard />} />
       </Routes>
